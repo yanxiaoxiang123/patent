@@ -1,0 +1,15 @@
+[Unit]
+Description=IPRS Backend (FastAPI)
+After=network.target
+
+[Service]
+Type=simple
+WorkingDirectory=/root/patent_zgn/patent/backend
+EnvironmentFile=/root/patent_zgn/patent/backend/.env
+ExecStart=/opt/miniconda3/bin/python -m uvicorn app.main:app --host 0.0.0.0 --port 8000
+Restart=always
+RestartSec=2
+
+[Install]
+WantedBy=multi-user.target
+

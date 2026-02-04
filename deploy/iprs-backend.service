@@ -1,0 +1,18 @@
+[Unit]
+Description=IPRS Backend (FastAPI)
+After=network.target mysql.service
+
+[Service]
+Type=simple
+WorkingDirectory=/www/wwwroot/iprs/patent/backend
+ExecStart=/www/wwwroot/iprs/patent/backend/.venv/bin/uvicorn app.main:app --host 127.0.0.1 --port 8000
+Restart=always
+RestartSec=3
+User=www
+Group=www
+Environment=PYTHONUNBUFFERED=1
+StandardOutput=append:/www/wwwroot/iprs/patent/backend/logs/uvicorn.log
+StandardError=append:/www/wwwroot/iprs/patent/backend/logs/uvicorn.log
+
+[Install]
+WantedBy=multi-user.target
