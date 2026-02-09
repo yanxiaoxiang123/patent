@@ -11,22 +11,3 @@ export const login = async (
 export const logout = async (): Promise<void> => {
   await api.post("/auth/logout");
 };
-
-export const getCurrentUser = async (): Promise<User> => {
-  const response = await api.get("/auth/me");
-  return response;
-};
-
-export const register = async (
-  form: LoginForm & { confirmPassword: string },
-): Promise<User> => {
-  const response = await api.post("/auth/register", form);
-  return response;
-};
-
-export const changePassword = async (data: {
-  oldPassword: string;
-  newPassword: string;
-}): Promise<void> => {
-  await api.post("/auth/change-password", data);
-};

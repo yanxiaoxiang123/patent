@@ -43,7 +43,7 @@
 </template>
 
 <script setup>
-import { ref, reactive, onMounted } from "vue";
+import { ref, reactive, onMounted, nextTick } from "vue";
 import { useRouter } from "vue-router";
 import { ElMessage } from "element-plus";
 import { useAuthStore } from "@/stores/auth";
@@ -74,12 +74,17 @@ const handleSubmit = () => {
     if (submitting.value) return;
     submitting.value = true;
     try {
-      await authStore.login({
+      console.log("开始登录...");
+      const response = await authStore.login({
         username: form.username,
         password: form.password,
       });
-      ElMessage.success("登录成功");
-      router.replace("/chat");
+      console.log("登录响应:", response);
+      console.log("authStore.token:", authStore.token);
+      console.log("localStorage token:", localStorage.getItem("token"));
+      console.log("登录成功，跳转到聊天页面");
+      // 使用 location.href 强制页面跳转，确保路由守卫正确检测到登录状态
+      window.location.href = "/chat";
     } catch (error) {
       ElMessage.error("用户名或密码错误");
     } finally {

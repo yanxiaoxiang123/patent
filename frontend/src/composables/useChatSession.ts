@@ -29,34 +29,14 @@ export function useChatSession() {
 
       for (const s of data) {
         const lastTime = s.last_message_at || s.updated_at || s.created_at;
-        let sessionMessages: ChatMessage[] = [];
-
-        // 尝试加载消息
-        try {
-          const sessionData = await api.get(`/ai/sessions/${s.id}`);
-          sessionMessages = (sessionData.messages || []).map((item: any) => ({
-            role: item.role,
-            content: item.content || "",
-            fullContent: item.content || "",
-            timestamp: item.created_at ? new Date(item.created_at) : new Date(),
-          }));
-        } catch (e) {
-          console.error(`加载会话 ${s.id} 消息失败:`, e);
-        }
-
-        // 根据消息内容生成合适的标题
-        const generatedTitle = generateSessionTitle(sessionMessages);
 
         loadedSessions.push({
           id: s.id,
-          title: generatedTitle,
-          messages: sessionMessages,
+          title: s.title || "新对话",
+          messages: [],  // 不在这里加载消息，等用户点击时再按需加载
           createdAt: s.created_at ? new Date(s.created_at).getTime() : null,
           updatedAt: lastTime ? new Date(lastTime).getTime() : null,
-          messageCount:
-            typeof s.message_count === "number"
-              ? s.message_count
-              : sessionMessages.length,
+          messageCount: typeof s.message_count === "number" ? s.message_count : 0,
         });
       }
 
@@ -75,11 +55,38 @@ export function useChatSession() {
   const fetchSessionMessages = async (sessionId: number): Promise<ChatMessage[]> => {
     try {
       const data = await api.get(`/ai/sessions/${sessionId}`);
+
+      // 获取会话关联的文档信息
+      let documentInfo: any = null;
+      if (data.document_id) {
+        try {
+          const docData = await api.get(`/documents/${data.document_id}`);
+          documentInfo = docData;
+        } catch (e) {
+          console.warn("获取文档信息失败:", e);
+        }
+      }
+
+      // 构建附件信息
+      const getAttachments = (msgDocumentId: number | null): any[] => {
+        if (!msgDocumentId || !documentInfo) return [];
+        return [{
+          id: documentInfo.id,
+          name: documentInfo.title || `文档-${msgDocumentId}`,
+          type: documentInfo.file_type || "docx",
+          size: documentInfo.file_size || 0,
+          parsed: documentInfo.status === "parsed" || documentInfo.status === "completed",
+          parsedContent: documentInfo.parsed_content || null,
+          parsed_content: documentInfo.parsed_content || null,
+        }];
+      };
+
       const list: ChatMessage[] = (data.messages || []).map((item: any) => ({
         role: item.role,
         content: item.content || "",
         fullContent: item.content || "",
         timestamp: item.created_at ? new Date(item.created_at) : new Date(),
+        attachments: item.role === "user" ? getAttachments(item.document_id) : undefined,
       }));
 
       const sessionIndex = sessions.value.findIndex((s) => s.id === sessionId);

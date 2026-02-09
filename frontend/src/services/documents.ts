@@ -25,9 +25,12 @@ export const getDocument = async (id: number): Promise<DocumentItem> => {
 export const uploadDocument = async (
   formData: FormData,
 ): Promise<DocumentItem> => {
+  const token = localStorage.getItem("token");
+  const authHeader = token ? (token.startsWith("Bearer ") ? token : `Bearer ${token}`) : undefined;
   const response = (await api.post("/documents/upload", formData, {
     headers: {
       "Content-Type": "multipart/form-data",
+      ...(authHeader ? { Authorization: authHeader } : {}),
     },
   })) as unknown as DocumentItem;
   return response;

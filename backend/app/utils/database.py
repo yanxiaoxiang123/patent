@@ -1,21 +1,23 @@
-from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
+"""数据库模块"""
+from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, create_async_engine
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
+from contextlib import asynccontextmanager
 import os
 from dotenv import load_dotenv
 
-# 加载环境变量
 load_dotenv()
 
-# 数据库配置
 DATABASE_URL = os.getenv("DATABASE_URL", "mysql+aiomysql://root:123123@localhost:3306/iprs")
 
 # 创建异步引擎
 engine = create_async_engine(
     DATABASE_URL,
-    echo=True,  # 开发环境显示 SQL 语句
-    pool_recycle=3600,  # 连接回收时间
-    pool_pre_ping=True,  # 连接预检查
+    echo=os.getenv("DEBUG", "false").lower() == "true",
+    pool_recycle=3600,
+    pool_pre_ping=True,
+    pool_size=5,
+    max_overflow=10,
 )
 
 # 创建异步会话工厂
@@ -23,13 +25,36 @@ AsyncSessionLocal = sessionmaker(
     engine, class_=AsyncSession, expire_on_commit=False
 )
 
-# 创建基础模型类
 Base = declarative_base()
 
-# 依赖注入：获取数据库会话
+
+@asynccontextmanager
 async def get_db():
+    """依赖注入：获取数据库会话（带异常处理）"""
+    session = AsyncSessionLocal()
+    try:
+        yield session
+        await session.commit()
+    except Exception:
+        await session.rollback()
+        raise
+    finally:
+        await session.close()
+
+
+async def get_db_dependency():
+    """FastAPI 依赖注入用的异步生成器"""
     async with AsyncSessionLocal() as session:
         try:
             yield session
+            await session.commit()
+        except Exception:
+            await session.rollback()
+            raise
         finally:
             await session.close()
+
+
+async def close_db():
+    """关闭数据库连接池"""
+    await engine.dispose()

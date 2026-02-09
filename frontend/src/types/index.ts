@@ -126,46 +126,68 @@ export interface PaginatedResponse<T> {
   size: number;
 }
 
-// 聊天相关类型
-export interface ChatMessage {
-  id?: number;
-  role: "user" | "assistant" | "system";
+// 聊天相关类型 - 扩展版本（推荐使用）
+export type MessageRole = 'user' | 'assistant' | 'ai' | 'system';
+
+export interface ChatMessageBase {
+  id: string;
+  role: MessageRole;
   content: string;
-  fullContent?: string;
   timestamp: Date;
+}
+
+export interface UserMessage extends ChatMessageBase {
+  role: 'user';
+  fullContent?: string;
   attachments?: FileAttachment[];
   templateId?: number;
 }
 
+export interface AIMessage extends ChatMessageBase {
+  role: 'ai' | 'assistant';
+  thinking?: string;
+  thinkingExpanded?: boolean;
+}
+
+export interface StreamingMessage {
+  isStreaming: true;
+  thinkingContent?: string;
+  answerContent?: string;
+  content: string;
+}
+
+export type ChatMessage = UserMessage | AIMessage | StreamingMessage;
+
 export interface ChatSession {
   id: number;
   title: string;
+  userId: number;
+  model: string;
+  documentId?: number;
   messages: ChatMessage[];
-  createdAt: number | null;
-  updatedAt: number | null;
-  messageCount: number;
+  messageCount?: number;
+  createdAt: Date;
+  updatedAt?: Date;
+  lastMessageAt?: Date;
 }
 
 export interface FileAttachment {
-  id: number;
+  id?: number | string;
   uid?: string;
   name: string;
-  type: string;
-  parsed: boolean;
+  type?: string;
+  size?: number;
+  parsed?: boolean;
   parsedContent?: ParsedContent | null;
   parsed_content?: ParsedContent | null;
-  error: boolean;
+  error?: boolean;
   parsingThinkingSteps?: Array<{
     step: string;
-    status: "pending" | "completed" | "error";
+    status: 'pending' | 'loading' | 'completed' | 'error';
+    message?: string;
   }>;
-}
-
-export interface StreamOptions {
-  messages: any[];
-  onChunk: (chunk: string) => void;
-  onComplete: (content: string) => void;
-  onError?: (error: Error) => void;
+  progress?: number;
+  progressText?: string;
 }
 
 export interface TemplateInfo {
@@ -173,5 +195,19 @@ export interface TemplateInfo {
   title: string;
   icon: string;
   description: string;
-  prompt: string;
+  prompt?: string;
+  isPrimary?: boolean;
+}
+
+export interface AISettings {
+  model: string;
+  temperature?: number;
+  maxTokens?: number;
+  enableThinking?: boolean;
+}
+
+export interface ThinkingSplitResult {
+  thinking: string;
+  answer: string;
+  hasThinking: boolean;
 }

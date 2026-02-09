@@ -1,19 +1,14 @@
 import argparse
 import asyncio
-import hashlib
-
 from dotenv import load_dotenv
 from sqlalchemy import text
 
 from app.utils.database import engine
-
-
-def sha256_hex(value: str) -> str:
-    return hashlib.sha256(value.encode()).hexdigest()
+from app.utils.passwords import hash_password
 
 
 async def upsert_user(username: str, password: str, role: str) -> None:
-    password_hash = sha256_hex(password)
+    password_hash = hash_password(password)
     stmt = text(
         """
         INSERT INTO users (username, password_hash, role)
@@ -67,4 +62,3 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
-
