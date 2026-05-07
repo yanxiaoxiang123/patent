@@ -1,11 +1,16 @@
 """主应用模块 - FastAPI 应用入口"""
 import uvicorn
 import os
+import logging
+from pathlib import Path
 from contextlib import asynccontextmanager
 from dotenv import load_dotenv
 
+# 配置日志 - 确保 INFO 级别能看到
+logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s")
+
 # 加载环境变量
-load_dotenv()
+load_dotenv(Path(__file__).parent.parent / ".env")  # backend/.env
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -75,7 +80,7 @@ async def health_check():
 
 # ===================== 注册路由 =====================
 
-from app.api import documents, auth, chat
+from app.api import documents, auth, chat, admin
 
 # 文档管理路由
 app.include_router(documents.router, prefix="/api/documents", tags=["文档管理"])
@@ -85,6 +90,9 @@ app.include_router(auth.router, prefix="/api/auth", tags=["认证管理"])
 
 # AI 对话路由
 app.include_router(chat.router, prefix="/api/ai", tags=["专利AI对话"])
+
+# 管理员路由
+app.include_router(admin.router, prefix="/api/admin", tags=["用户管理"])
 
 
 # ===================== 启动入口 =====================

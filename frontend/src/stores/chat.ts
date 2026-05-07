@@ -201,11 +201,11 @@ export const useChatStore = defineStore("chat", () => {
         parsingThinkingSteps: file.parsingThinkingSteps || [],
       }));
       localStorage.setItem("patent_uploaded_files", JSON.stringify(fileData));
-    } catch (error) {
-      console.error("保存状态失败:", error);
+    } catch {
+      // 静默处理 localStorage 写入失败
     }
   };
-  
+
   /**
    * 从 localStorage 加载
    */
@@ -216,7 +216,7 @@ export const useChatStore = defineStore("chat", () => {
       if (savedId) {
         currentSessionId.value = Number(savedId);
       }
-      
+
       // 加载上传文件
       const savedFiles = localStorage.getItem("patent_uploaded_files");
       if (savedFiles) {
@@ -225,8 +225,8 @@ export const useChatStore = defineStore("chat", () => {
           uploadedFiles.value = parsed;
         }
       }
-    } catch (error) {
-      console.error("加载状态失败:", error);
+    } catch {
+      // 静默处理 localStorage 读取失败
     }
   };
   

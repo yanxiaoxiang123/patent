@@ -3,8 +3,42 @@ export interface User {
   id: number;
   username: string;
   role: "user" | "admin";
+  email?: string;
+  full_name?: string;
+  is_active: boolean;
   created_at: string;
-  updated_at: string;
+  updated_at?: string;
+  last_login_at?: string;
+  last_login_ip?: string;
+  login_attempts?: number;
+}
+
+export interface UserListParams {
+  page?: number;
+  size?: number;
+  search?: string;
+  role?: string;
+}
+
+export interface UserListResponse {
+  data: User[];
+  total: number;
+  page: number;
+  size: number;
+}
+
+export interface CreateUserPayload {
+  username: string;
+  password: string;
+  email?: string;
+  full_name?: string;
+  role?: string;
+}
+
+export interface UpdateUserPayload {
+  email?: string;
+  full_name?: string;
+  role?: string;
 }
 
 export interface LoginForm {

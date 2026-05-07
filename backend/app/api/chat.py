@@ -1,9 +1,10 @@
 """聊天 API 模块"""
 import json
+import httpx
 from typing import Optional
 from fastapi import APIRouter, Request, HTTPException, status
 from sse_starlette.sse import EventSourceResponse
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 from app.services.ollama import (
     ChatMessage,
@@ -25,6 +26,7 @@ from app.services.chat_persistence import (
 )
 from app.services.rule_retriever import get_rule_retriever
 from app.core.security import parse_auth_header, TokenPayload
+from app.core.config import OLLAMA_MODEL, OLLAMA_URLS
 
 router = APIRouter(tags=["专利AI对话"])
 
@@ -39,14 +41,15 @@ SSE_HEADERS = {
 # ===================== Pydantic Models =====================
 
 class ChatRequest(BaseModel):
-    messages: list
+    """聊天请求验证"""
+    messages: list = Field(..., min_length=1, description="消息列表不能为空")
     stream: bool = True
-    model: str = "qwen3:8b"
-    max_tokens: int = 40960
+    model: str = Field(default=OLLAMA_MODEL, pattern=r"^[\w:-]+$", description="模型名称格式不正确")
+    max_tokens: int = Field(default=40960, ge=100, le=40960, description="max_tokens 范围: 100-40960")
     passthrough: bool = False
-    template_id: Optional[int] = None
-    session_id: Optional[int] = None
-    document_id: Optional[int] = None
+    template_id: Optional[int] = Field(default=None, ge=1, le=100, description="模板ID无效")
+    session_id: Optional[int] = Field(default=None, ge=1, description="会话ID无效")
+    document_id: Optional[int] = Field(default=None, ge=1, description="文档ID无效")
 
 
 # ===================== 认证 =====================
@@ -107,7 +110,7 @@ def build_system_messages(messages: list, user_message: str) -> list:
 
 async def load_strict_template(template_id: int) -> Optional[str]:
     """加载严格模板"""
-    if template_id not in [1, 3]:
+    if template_id not in [1, 2, 3, 5]:
         return None
     rule_retriever = get_rule_retriever()
     return rule_retriever.get_system_prompt(template_id=template_id, case_type=None)
@@ -183,7 +186,14 @@ async def create_stream_generator(
         yield {"event": "done", "data": "[DONE]", "id": "", "retry": None}
 
     except Exception as e:
-        error_data = {"choices": [{"delta": {"content": f"抱歉，AI 服务暂时不可用：{str(e)}"}}]}
+        err_msg = str(e)
+        if "模型配置或请求参数错误" in err_msg:
+            user_msg = "抱歉，模型配置或请求参数错误，请联系管理员检查模型配置。"
+        elif "无法连接到 Ollama 服务" in err_msg:
+            user_msg = "抱歉，无法连接 AI 服务，请稍后重试。"
+        else:
+            user_msg = "抱歉，AI 服务暂时不可用，请稍后重试。"
+        error_data = {"choices": [{"delta": {"content": user_msg}}]}
         yield {"event": "error", "data": json.dumps(error_data, ensure_ascii=False), "id": "", "retry": None}
         yield {"event": "done", "data": "[DONE]", "id": "", "retry": None}
 
@@ -193,6 +203,44 @@ async def create_patent_error_stream():
     error = {"choices": [{"delta": {"content": "抱歉，我是专门的专利 AI 助手，只能回答与专利相关的问题。"}}]}
     yield {"event": "message", "data": json.dumps(error, ensure_ascii=False), "id": "", "retry": None}
     yield {"event": "done", "data": "[DONE]", "id": "", "retry": None}
+
+
+# ===================== 测试端点 =====================
+
+@router.get("/test-ollama")
+async def test_ollama_connection():
+    """测试 Ollama 连接（调试用）"""
+    last_error = None
+    for ollama_url in OLLAMA_URLS:
+        try:
+            async with httpx.AsyncClient(timeout=10.0) as client:
+                tags_resp = await client.get(f"{ollama_url}/api/tags")
+                tags_data = tags_resp.json()
+
+                chat_resp = await client.post(
+                    f"{ollama_url}/api/chat",
+                    json={
+                        "model": OLLAMA_MODEL,
+                        "messages": [{"role": "user", "content": "你好"}],
+                        "stream": False,
+                    }
+                )
+                chat_data = chat_resp.json()
+
+                return {
+                    "status": "ok",
+                    "ollama_url": ollama_url,
+                    "models": tags_data.get("models", []),
+                    "chat_test": "success" if "message" in chat_data else chat_data,
+                }
+        except Exception as e:
+            last_error = e
+
+    return {
+        "status": "error",
+        "ollama_url": OLLAMA_URLS[0],
+        "error": str(last_error) if last_error else "unknown error",
+    }
 
 
 # ===================== 聊天处理 =====================
@@ -260,7 +308,7 @@ async def chat_completion(chat_request: ChatRequest, request: Request):
 
     # 加载严格模板
     strict_system_prompt = None
-    if chat_request.template_id in [1, 3]:
+    if chat_request.template_id in [1, 2, 3, 5]:
         strict_system_prompt = await load_strict_template(chat_request.template_id)
         if not strict_system_prompt:
             raise HTTPException(
@@ -367,7 +415,7 @@ async def list_models():
                 ]}
     except Exception:
         pass
-    return {"models": [{"id": "qwen3:8b", "name": "Qwen3-8B", "size": 0}]}
+    return {"models": [{"id": OLLAMA_MODEL, "name": OLLAMA_MODEL, "size": 0}]}
 
 
 @router.get("/status")

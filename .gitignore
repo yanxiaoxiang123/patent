@@ -58,3 +58,12 @@ Thumbs.db
 dist/
 build/
 *.egg-info/
+
+# Claude Code local config (may contain sensitive data)
+.claude/
+
+# Uploaded files
+backend/uploads/
+
+# Node modules
+frontend/node_modules/

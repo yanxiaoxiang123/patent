@@ -4,7 +4,7 @@
     <div class="action-group">
       <el-tooltip content="复制内容" placement="top">
         <el-button
-          type="text"
+          text
           size="small"
           class="action-btn"
           aria-label="复制消息内容"
@@ -19,7 +19,7 @@
 
       <el-tooltip content="重新生成" placement="top">
         <el-button
-          type="text"
+          text
           size="small"
           class="action-btn"
           aria-label="重新生成回答"
@@ -40,7 +40,7 @@
       @command="handleMoreAction"
     >
       <el-button
-        type="text"
+        text
         size="small"
         class="action-btn more-btn"
         aria-haspopup="true"
@@ -88,6 +88,7 @@ import {
 const emit = defineEmits<{
   'copy': [content: string]
   'regenerate': []
+  'quote': [content: string]
 }>()
 
 const showCopySuccess = ref(false)
@@ -126,15 +127,15 @@ defineExpose({
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-top: 12px;
-  padding-top: 10px;
-  border-top: 1px solid rgba(148, 163, 184, 0.1);
+  margin-top: 10px;
+  padding-top: 8px;
+  border-top: 1px solid var(--border-light);
 }
 
 .action-group {
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: 2px;
 }
 
 .action-btn {
@@ -143,14 +144,14 @@ defineExpose({
   gap: 4px;
   padding: 4px 8px;
   font-size: 12px;
-  color: #6b7280;
-  border-radius: 6px;
-  transition: all 0.2s ease;
+  color: var(--text-muted);
+  border-radius: var(--radius-sm);
+  transition: all 0.15s ease;
 }
 
 .action-btn:hover {
-  color: #374151;
-  background: rgba(148, 163, 184, 0.1);
+  color: var(--primary-color);
+  background: rgba(37, 99, 235, 0.04);
 }
 
 .action-text {
@@ -167,20 +168,20 @@ defineExpose({
   left: 50%;
   transform: translate(-50%, -50%);
   padding: 8px 16px;
-  background: rgba(0, 0, 0, 0.8);
+  background: var(--text-primary);
   color: #fff;
   font-size: 13px;
-  border-radius: 8px;
+  border-radius: var(--radius-sm);
   display: flex;
   align-items: center;
   gap: 6px;
-  animation: fadeIn 0.3s ease;
+  animation: fadeIn 0.2s ease;
   z-index: 10;
 }
 
 .fade-enter-active,
 .fade-leave-active {
-  transition: opacity 0.3s ease;
+  transition: opacity 0.2s ease;
 }
 
 .fade-enter-from,

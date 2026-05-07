@@ -67,25 +67,27 @@ const handleDelete = () => {
 
 <style scoped>
 .session-item {
-  padding: 8px 8px 6px;
-  border-radius: 12px;
+  padding: 8px 10px;
+  border-radius: var(--radius-sm);
   cursor: pointer;
   display: flex;
   flex-direction: column;
-  gap: 6px;
-  margin-bottom: 4px;
-  transition:
-    background 0.16s ease,
-    box-shadow 0.16s ease;
+  gap: 4px;
+  margin-bottom: 2px;
+  transition: background 0.15s ease;
 }
 
 .session-item:hover {
-  background: #f3f4f6;
+  background: var(--bg-tertiary);
 }
 
 .session-item.active {
-  background: #111827;
-  color: #f9fafb;
+  background: rgba(37, 99, 235, 0.08);
+}
+
+.session-item.active .session-item-title-text {
+  color: var(--primary-color);
+  font-weight: 600;
 }
 
 .session-item-main {
@@ -102,8 +104,9 @@ const handleDelete = () => {
 }
 
 .session-item-title-text {
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 500;
+  color: var(--text-primary);
   flex: 1;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -112,10 +115,11 @@ const handleDelete = () => {
 
 .session-delete-btn {
   opacity: 0;
-  transition: opacity 0.16s ease;
+  transition: opacity 0.15s ease;
   padding: 2px;
   min-height: 20px;
   width: 20px;
+  color: var(--text-muted);
 }
 
 .session-item:hover .session-delete-btn {
@@ -123,20 +127,19 @@ const handleDelete = () => {
 }
 
 .session-item.active .session-delete-btn {
-  color: #f9fafb;
-  opacity: 0.7;
+  color: var(--primary-color);
 }
 
 .session-item-meta {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  font-size: 12px;
-  color: #9ca3af;
+  font-size: 11px;
+  color: var(--text-muted);
 }
 
 .session-item.active .session-item-meta {
-  color: #d1d5db;
+  color: var(--text-secondary);
 }
 
 .session-time {

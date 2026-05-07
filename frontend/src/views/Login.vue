@@ -74,15 +74,10 @@ const handleSubmit = () => {
     if (submitting.value) return;
     submitting.value = true;
     try {
-      console.log("开始登录...");
       const response = await authStore.login({
         username: form.username,
         password: form.password,
       });
-      console.log("登录响应:", response);
-      console.log("authStore.token:", authStore.token);
-      console.log("localStorage token:", localStorage.getItem("token"));
-      console.log("登录成功，跳转到聊天页面");
       // 使用 location.href 强制页面跳转，确保路由守卫正确检测到登录状态
       window.location.href = "/chat";
     } catch (error) {
@@ -108,43 +103,36 @@ onMounted(() => {
   align-items: center;
   justify-content: center;
   padding: 40px 16px;
-  background: radial-gradient(
-    circle at top,
-    #ffffff 0,
-    #f5f5f7 55%,
-    #e5e7eb 100%
-  );
+  background: var(--bg-secondary);
   color-scheme: light;
   font-family: -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
 }
 
 .login-card {
-  width: 380px;
+  width: 360px;
   max-width: 100%;
-  padding: 32px 32px 28px;
-  border-radius: 26px;
-  background: rgba(255, 255, 255, 0.96);
-  backdrop-filter: blur(26px);
-  box-shadow: 0 22px 45px rgba(15, 23, 42, 0.16);
-  border: 1px solid rgba(148, 163, 184, 0.2);
+  padding: 32px;
+  border-radius: var(--radius-lg);
+  background: var(--bg-primary);
+  border: 1px solid var(--border-color);
+  box-shadow: var(--shadow-md);
 }
 
 .login-header {
   text-align: center;
-  margin-bottom: 24px;
+  margin-bottom: 28px;
 }
 
 .login-header h2 {
-  font-size: 24px;
+  font-size: 20px;
   font-weight: 600;
-  letter-spacing: 0.04em;
-  color: #111827;
+  color: var(--text-primary);
   margin-bottom: 6px;
 }
 
 .login-header p {
   font-size: 13px;
-  color: #6b7280;
+  color: var(--text-secondary);
 }
 
 .login-form {
@@ -152,66 +140,53 @@ onMounted(() => {
 }
 
 .login-card :deep(.el-form-item__label) {
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 500;
-  color: #4b5563;
-  padding-bottom: 4px;
+  color: var(--text-primary);
+  padding-bottom: 6px;
 }
 
 .login-card :deep(.el-input__wrapper) {
   padding: 2px 12px;
-  border-radius: 12px;
+  border-radius: var(--radius-sm);
   box-shadow: none;
-  border: 1px solid #e5e7eb;
-  background-color: #f9fafb;
-  transition:
-    border-color 0.18s ease,
-    box-shadow 0.18s ease,
-    background-color 0.18s ease;
+  border: 1px solid var(--border-color);
+  background-color: var(--bg-secondary);
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.login-card :deep(.el-input__wrapper:hover) {
+  border-color: var(--text-muted);
 }
 
 .login-card :deep(.el-input__wrapper.is-focus) {
-  border-color: #111827;
-  background-color: #ffffff;
-  box-shadow: 0 0 0 1px rgba(15, 23, 42, 0.06);
+  border-color: var(--primary-color);
+  background-color: var(--bg-primary);
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
 }
 
 .login-card :deep(.el-input__inner) {
-  font-size: 13px;
+  font-size: 14px;
 }
 
 .login-button {
   width: 100%;
-  margin-top: 12px;
-  border-radius: 999px;
+  margin-top: 8px;
+  height: 40px;
+  border-radius: var(--radius-sm);
   font-weight: 500;
-  letter-spacing: 0.08em;
-}
-
-.login-card :deep(.login-button.el-button--primary) {
-  background-color: #111827;
-  border-color: #111827;
+  font-size: 14px;
+  border: none;
+  background: var(--primary-color);
+  transition: background-color 0.2s ease;
 }
 
 .login-card :deep(.login-button.el-button--primary:hover) {
-  background-color: #020617;
-  border-color: #020617;
+  background: var(--primary-hover);
 }
 
 .login-card :deep(.el-button.is-loading) {
   opacity: 0.9;
-}
-
-.login-hint {
-  margin-top: 18px;
-  font-size: 12px;
-  color: #9ca3af;
-  text-align: center;
-}
-
-.login-hint span {
-  color: #4b5563;
-  font-weight: 500;
 }
 
 @media (max-width: 640px) {
@@ -221,9 +196,8 @@ onMounted(() => {
 
   .login-card {
     width: 100%;
-    padding: 28px 22px 22px;
-    border-radius: 22px;
-    box-shadow: 0 18px 38px rgba(15, 23, 42, 0.16);
+    padding: 28px 20px;
+    border-radius: var(--radius-md);
   }
 }
 </style>

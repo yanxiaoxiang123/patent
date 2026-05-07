@@ -29,8 +29,10 @@ def load_rules(template_id: int) -> Optional[Dict[str, Any]]:
 
     # 规则文件映射
     rule_files = {
-        1: "general_case_rules.json",
-        3: "project_case_rules.json",
+        1: "general_case_rules.json",       # 普通案例审核
+        2: "patent_guidance_rules.json",    # 专利审核指导
+        3: "project_case_rules.json",       # 专案案例审核
+        5: "ipc_classification_rules.json", # IPC 分类指导
     }
 
     if template_id not in rule_files:
@@ -82,7 +84,7 @@ def get_all_rules() -> Dict[int, Dict[str, Any]]:
         所有规则的字典，key为template_id
     """
     all_rules = {}
-    for template_id in [1, 3]:
+    for template_id in [1, 2, 3, 5]:
         rules = load_rules(template_id)
         if rules:
             all_rules[template_id] = rules
@@ -216,6 +218,89 @@ def format_rules_as_prompt(rules: Dict[str, Any], case_type: str = None) -> str:
         for item in check_items:
             parts.append(f"- {item.get('item')}：{item.get('requirement', '')}")
             parts.append(f"  检查方法：{item.get('method', '')}")
+
+    # 添加 template_id=2 专利审核指导特殊规则
+    document_overview = rules.get("rules", {}).get("document_overview")
+    if document_overview:
+        parts.append("\n【文档整体概览】")
+        check_items = document_overview.get("check_items", [])
+        for item in check_items:
+            parts.append(f"- {item.get('item')}：{item.get('check_point', '')}")
+
+    key_innovation = rules.get("rules", {}).get("key_innovation_points")
+    if key_innovation:
+        parts.append("\n【关键技术特征和创新点】")
+        check_items = key_innovation.get("check_items", [])
+        for item in check_items:
+            parts.append(f"- {item.get('item')}：{item.get('check_point', '')}")
+
+    format_guidance = rules.get("rules", {}).get("format_guidance")
+    if format_guidance:
+        parts.append("\n【格式规范指导】")
+        categories = format_guidance.get("categories", {})
+        for cat_id, cat_info in sorted(categories.items()):
+            name = cat_info.get("name", "")
+            parts.append(f"\n{cat_id} {name}：")
+            check_items = cat_info.get("check_items", [])
+            for item in check_items:
+                parts.append(f"- {item.get('item')}：{item.get('check_point', '')}")
+
+    content_guidance = rules.get("rules", {}).get("content_guidance")
+    if content_guidance:
+        parts.append("\n【内容质量指导】")
+        check_items = content_guidance.get("check_items", [])
+        for item in check_items:
+            parts.append(f"- {item.get('item')}：{item.get('check_point', '')}")
+
+    learning_points = rules.get("rules", {}).get("learning_points")
+    if learning_points:
+        parts.append("\n【专利审核知识点】")
+        categories = learning_points.get("categories", {})
+        for cat_id, cat_info in sorted(categories.items()):
+            name = cat_info.get("name", "")
+            parts.append(f"\n{name}：")
+            knowledge_items = cat_info.get("knowledge", [])
+            for k in knowledge_items:
+                parts.append(f"- {k}")
+
+    # 添加 template_id=5 IPC分类特殊规则
+    tech_analysis = rules.get("rules", {}).get("technology_analysis")
+    if tech_analysis:
+        parts.append("\n【技术方案分析】")
+        check_items = tech_analysis.get("check_items", [])
+        for item in check_items:
+            parts.append(f"- {item.get('item')}：{item.get('check_point', '')}")
+
+    ipc_main_class = rules.get("rules", {}).get("ipc_main_class")
+    if ipc_main_class:
+        parts.append("\n【主分类号分析】")
+        check_items = ipc_main_class.get("check_items", [])
+        for item in check_items:
+            parts.append(f"- {item.get('item')}：{item.get('check_point', '')}")
+
+        ipc_sections = ipc_main_class.get("ipc_sections", {})
+        if ipc_sections:
+            parts.append("\nIPC分类参考：")
+            for section_id, section_info in sorted(ipc_sections.items()):
+                name = section_info.get("name", "")
+                subclasses = section_info.get("subclasses", [])
+                parts.append(f"\n{section_id} {name}：")
+                for sub in subclasses[:3]:  # 只显示前3个常用小类
+                    parts.append(f"  {sub['code']}：{sub['description']}")
+
+    ipc_aux_classes = rules.get("rules", {}).get("ipc_auxiliary_classes")
+    if ipc_aux_classes:
+        parts.append("\n【辅分类号分析】")
+        check_items = ipc_aux_classes.get("check_items", [])
+        for item in check_items:
+            parts.append(f"- {item.get('item')}：{item.get('check_point', '')}")
+
+    classification_rationale = rules.get("rules", {}).get("classification_rationale")
+    if classification_rationale:
+        parts.append("\n【分类选择理由】")
+        check_items = classification_rationale.get("check_items", [])
+        for item in check_items:
+            parts.append(f"- {item.get('item')}：{item.get('check_point', '')}")
 
     # 添加输出格式
     output_format = rules.get("output_format", {})

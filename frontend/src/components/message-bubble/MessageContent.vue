@@ -35,10 +35,14 @@ const props = withDefaults(defineProps<Props>(), {
 <style scoped>
 .message-content {
   position: relative;
-  line-height: 1.8;
-  font-size: 15px;
-  color: #111827;
+  line-height: 1.7;
+  font-size: 14px;
+  color: var(--text-primary);
   word-wrap: break-word;
+  background: var(--bg-primary);
+  padding: 12px 16px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-color);
 }
 
 .message-content.is-streaming {
@@ -46,13 +50,13 @@ const props = withDefaults(defineProps<Props>(), {
 }
 
 .markdown-content {
-  color: #111827;
+  color: var(--text-primary);
 }
 
 .typing-cursor {
   display: inline-block;
   margin-left: 2px;
-  color: #111827;
+  color: var(--primary-color);
   animation: cursorBlink 1s infinite;
 }
 

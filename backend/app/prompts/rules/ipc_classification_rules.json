@@ -1,0 +1,220 @@
+{
+  "template_id": 5,
+  "template_name": "IPC分类专家",
+  "case_types": ["实用新型", "普通发明"],
+  "description": "根据技术方案选择合适的专利 IPC 分类号，并解释每个分类号的含义和选择理由",
+  "output_structure": {
+    "section_1": {
+      "id": "technology_analysis",
+      "title": "技术方案分析",
+      "description": "分析专利技术方案的核心技术领域和技术特征"
+    },
+    "section_2": {
+      "id": "ipc_main_class",
+      "title": "主分类号分析",
+      "description": "确定主分类号及其选择理由"
+    },
+    "section_3": {
+      "id": "ipc_auxiliary_classes",
+      "title": "辅分类号分析",
+      "description": "确定辅分类号及其选择理由"
+    },
+    "section_4": {
+      "id": "classification_rationale",
+      "title": "分类选择理由",
+      "description": "详细解释分类选择的技术依据"
+    }
+  },
+  "rules": {
+    "technology_analysis": {
+      "description": "技术方案分析",
+      "check_items": [
+        {
+          "id": "TA-001",
+          "item": "核心技术领域",
+          "check_point": "确定技术方案所属的技术领域",
+          "method": "根据权利要求和说明书内容判断"
+        },
+        {
+          "id": "TA-002",
+          "item": "主要功能特征",
+          "check_point": "识别技术方案的主要功能和结构特征",
+          "method": "分析独立权利要求中的技术特征"
+        },
+        {
+          "id": "TA-003",
+          "item": "应用场景",
+          "check_point": "确定技术方案的应用场景",
+          "method": "从说明书的实施方式中提取"
+        },
+        {
+          "id": "TA-004",
+          "item": "技术问题",
+          "check_point": "明确技术方案要解决的技术问题",
+          "method": "从发明内容和有益效果中提取"
+        }
+      ]
+    },
+    "ipc_main_class": {
+      "description": "主分类号分析",
+      "check_items": [
+        {
+          "id": "IM-001",
+          "item": "IPC部类确定",
+          "check_point": "根据技术领域确定IPC部类（A-H）",
+          "method": "参考IPC分类表各部类定义"
+        },
+        {
+          "id": "IM-002",
+          "item": "IPC大类确定",
+          "check_point": "确定IPC大类",
+          "method": "根据技术方案的主要功能确定大类"
+        },
+        {
+          "id": "IM-003",
+          "item": "IPC小类确定",
+          "check_point": "确定IPC小类",
+          "method": "根据技术方案的具体结构或方法确定小类"
+        },
+        {
+          "id": "IM-004",
+          "item": "IPC组确定",
+          "check_point": "确定IPC组",
+          "method": "根据技术方案的具体特征确定组"
+        }
+      ],
+      "ipc_sections": {
+        "A": {
+          "name": "人类生活必需品",
+          "subclasses": [
+            {"code": "A01", "description": "农业；林业；畜牧业；打猎；诱捕；渔业"},
+            {"code": "A61", "description": "医学或兽医学；卫生学"},
+            {"code": "A63", "description": "运动；游戏；娱乐活动"}
+          ]
+        },
+        "B": {
+          "name": "作业；运输",
+          "subclasses": [
+            {"code": "B01", "description": "一般的物理或化学的方法或装置"},
+            {"code": "B23", "description": "机床；未列入其他类的金属加工"},
+            {"code": "B25", "description": "未列入其他类的用于手持工具的手持工具"}
+          ]
+        },
+        "C": {
+          "name": "化学；冶金",
+          "subclasses": [
+            {"code": "C01", "description": "无机化学"},
+            {"code": "C08", "description": "有机化学化合物"}
+          ]
+        },
+        "D": {
+          "name": "纺织；造纸",
+          "subclasses": [
+            {"code": "D06", "description": "织物等的一般处理"}
+          ]
+        },
+        "E": {
+          "name": "固定建筑物",
+          "subclasses": [
+            {"code": "E01", "description": "道路或铁路的建筑"},
+            {"code": "E03", "description": "给水；排水"},
+            {"code": "E05", "description": "锁；窗户；百叶窗；梯子"}
+          ]
+        },
+        "F": {
+          "name": "机械工程",
+          "subclasses": [
+            {"code": "F01", "description": "机器或发动机"},
+            {"code": "F16", "description": "工程元件或部件"}
+          ]
+        },
+        "G": {
+          "name": "物理",
+          "subclasses": [
+            {"code": "G01", "description": "测量；测试"},
+            {"code": "G06", "description": "计算；推算；计数"},
+            {"code": "G08", "description": "信号装置"}
+          ]
+        },
+        "H": {
+          "name": "电学",
+          "subclasses": [
+            {"code": "H01", "description": "基本电气元件"},
+            {"code": "H02", "description": "电力的发电、变电或配电"},
+            {"code": "H04", "description": "电通信技术"}
+          ]
+        }
+      }
+    },
+    "ipc_auxiliary_classes": {
+      "description": "辅分类号分析",
+      "check_items": [
+        {
+          "id": "IA-001",
+          "item": "技术特征相关分类",
+          "check_point": "根据附加技术特征确定辅分类号",
+          "method": "分析从属权利要求中的附加特征"
+        },
+        {
+          "id": "IA-002",
+          "item": "应用领域分类",
+          "check_point": "根据应用场景确定辅分类号",
+          "method": "从说明书实施方式中提取应用场景"
+        },
+        {
+          "id": "IA-003",
+          "item": "相关功能分类",
+          "check_point": "根据相关功能确定辅分类号",
+          "method": "分析技术方案实现的其他功能"
+        }
+      ]
+    },
+    "classification_rationale": {
+      "description": "分类选择理由",
+      "check_items": [
+        {
+          "id": "CR-001",
+          "item": "主分类理由",
+          "check_point": "说明选择主分类号的技术依据",
+          "method": "引用权利要求和说明书原文"
+        },
+        {
+          "id": "CR-002",
+          "item": "辅分类理由",
+          "check_point": "说明选择辅分类号的技术依据",
+          "method": "分析附加特征与主分类的关系"
+        },
+        {
+          "id": "CR-003",
+          "item": "分类依据",
+          "check_point": "说明分类选择符合IPC分类规则",
+          "method": "引用IPC分类规则相关条款"
+        },
+        {
+          "id": "CR-004",
+          "item": "注意事项",
+          "check_point": "说明分类选择需注意的事项",
+          "method": "参考国家知识产权局分类要求"
+        }
+      ]
+    }
+  },
+  "output_format": {
+    "section_1": {
+      "title": "一、技术方案分析",
+      "fields": ["核心技术领域", "主要功能特征", "应用场景", "技术问题"]
+    },
+    "section_2": {
+      "title": "二、主分类号",
+      "fields": ["IPC部类", "IPC大类", "IPC小类", "IPC组", "主分类理由"]
+    },
+    "section_3": {
+      "title": "三、辅分类号",
+      "fields": ["辅分类号1", "辅分类理由", "辅分类号2", "辅分类理由", "辅分类号3", "辅分类理由"]
+    },
+    "section_4": {
+      "title": "四、分类选择理由总结",
+      "fields": ["分类依据", "注意事项", "建议"]
+    }
+  }
+}

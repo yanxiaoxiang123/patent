@@ -1,11 +1,39 @@
 """Ollama AI 服务模块"""
 import asyncio
 import json
+import logging
 from typing import List, Optional, AsyncGenerator, Dict, Any
 import httpx
 from pydantic import BaseModel
 
-from app.core.config import OLLAMA_URL
+from app.core.config import OLLAMA_MODEL, OLLAMA_URLS
+
+logger = logging.getLogger(__name__)
+
+
+class OllamaHTTPStatusError(Exception):
+    def __init__(self, status_code: int, detail: str):
+        self.status_code = status_code
+        self.detail = detail
+        super().__init__(f"Ollama API 错误: {status_code} - {detail}")
+
+
+def _log_request_meta(url: str, payload: Dict[str, Any]) -> None:
+    options = payload.get("options", {})
+    logger.info(
+        f"[Ollama] 请求 URL: {url} | model={payload.get('model')} "
+        f"| msg_count={len(payload.get('messages', []))} "
+        f"| max_tokens={options.get('max_tokens')} | num_ctx={options.get('num_ctx')}"
+    )
+
+
+def get_ollama_base_urls() -> List[str]:
+    """返回按优先级排列的 Ollama 地址，并始终保留本地回退。"""
+    base_urls = list(OLLAMA_URLS)
+    for fallback in ("http://localhost:11434", "http://127.0.0.1:11434"):
+        if fallback not in base_urls:
+            base_urls.append(fallback)
+    return base_urls
 
 
 # ===================== Pydantic Models =====================
@@ -18,7 +46,7 @@ class ChatMessage(BaseModel):
 class ChatRequest(BaseModel):
     messages: List[ChatMessage]
     stream: bool = True
-    model: str = "qwen3:8b"
+    model: str = OLLAMA_MODEL
     max_tokens: int = 40960
     temperature: float = 0.7
     passthrough: bool = False
@@ -143,10 +171,18 @@ def trim_to_strict_report(template_id: Optional[int], text: str) -> str:
     if not template_id or not isinstance(text, str):
         return text
     start_marker = None
+    # template_id=1: 普通案例审核
     if template_id == 1:
         start_marker = "① 案件类型判定"
+    # template_id=3: 专案案例审核
     elif template_id == 3:
         start_marker = "① 通用规则预审（A–F）"
+    # template_id=2: 专利审核指导
+    elif template_id == 2:
+        start_marker = "一、文档整体概览"
+    # template_id=5: IPC 分类指导
+    elif template_id == 5:
+        start_marker = "一、技术方案分析"
     if not start_marker:
         return text
     idx = text.find(start_marker)
@@ -165,10 +201,13 @@ async def _stream_response(
     prefer_chat: bool
 ) -> AsyncGenerator[Dict[str, Any], None]:
     """流式响应生成器"""
-    async with client.stream("POST", f"{base}{api_path}", json=payload) as response:
+    url = f"{base}{api_path}"
+    _log_request_meta(url, payload)
+    async with client.stream("POST", url, json=payload) as response:
         if response.status_code != 200:
-            error_text = await response.aread()
-            raise Exception(f"Ollama API 错误: {response.status_code} - {error_text.decode('utf-8', errors='ignore')}")
+            error_text = (await response.aread()).decode("utf-8", errors="ignore")
+            logger.error(f"[Ollama] 非200错误响应: {response.status_code} - {error_text}")
+            raise OllamaHTTPStatusError(response.status_code, error_text)
 
         try:
             async for line in response.aiter_lines():
@@ -251,7 +290,7 @@ def _build_payload(
 
 async def get_ollama_response_stream(
     messages: List[ChatMessage],
-    model: str = "qwen3:8b",
+    model: str = OLLAMA_MODEL,
     is_strict_template: bool = False,
     max_tokens: int = 40960,
     prefer_chat: bool = False,
@@ -266,33 +305,51 @@ async def get_ollama_response_stream(
 
     try:
         async with httpx.AsyncClient(timeout=300.0) as client:
-            payload = _build_payload(
-                messages, model, system_prompt, prompt,
-                temperature, top_p, max_tokens, is_strict_template, prefer_chat
-            )
-            api_path = "/api/chat" if prefer_chat else "/api/generate"
+            last_error: Optional[Exception] = None
+            for base_url in get_ollama_base_urls():
+                plans = [(prefer_chat, False), (prefer_chat, True)]
+                if prefer_chat:
+                    plans.extend([(False, False), (False, True)])
 
-            try:
-                async for chunk in _stream_response(client, OLLAMA_URL, api_path, payload, prefer_chat):
-                    yield chunk
-            except (httpx.ConnectError, httpx.ReadTimeout):
-                # 失败回退（当前单实例不做处理）
-                payload = _build_payload(
-                    messages, model, system_prompt, prompt,
-                    temperature, top_p, max_tokens, is_strict_template, prefer_chat, reduced_max_tokens=True
-                )
-                async for chunk in _stream_response(client, OLLAMA_URL, api_path, payload, prefer_chat):
-                    yield chunk
+                for prefer_chat_mode, reduced in plans:
+                    api_path = "/api/chat" if prefer_chat_mode else "/api/generate"
+                    payload = _build_payload(
+                        messages, model, system_prompt, prompt,
+                        temperature, top_p, max_tokens, is_strict_template, prefer_chat_mode, reduced_max_tokens=reduced
+                    )
+                    try:
+                        async for chunk in _stream_response(client, base_url, api_path, payload, prefer_chat_mode):
+                            yield chunk
+                        return
+                    except OllamaHTTPStatusError as e:
+                        last_error = e
+                        if e.status_code not in {404, 405, 500, 502, 503, 504}:
+                            raise
+                        continue
+                    except (httpx.ConnectError, httpx.ReadTimeout) as e:
+                        last_error = e
+                        logger.warning(f"[Ollama] 地址不可用，尝试回退: {base_url} - {e}")
+                        break
+
+            if last_error:
+                raise last_error
+            raise Exception("AI 服务暂时不可用，请稍后重试")
 
     except httpx.ConnectError:
         raise Exception("无法连接到 Ollama 服务，请确保服务正在运行")
+    except OllamaHTTPStatusError as e:
+        logger.error(f"Ollama API 调用失败: {str(e)}")
+        if 400 <= e.status_code < 500:
+            raise Exception("模型配置或请求参数错误，请检查后重试")
+        raise Exception("AI 服务暂时不可用，请稍后重试")
     except Exception as e:
-        raise Exception(f"Ollama API 调用失败: {str(e)}")
+        logger.error(f"Ollama API 调用失败: {str(e)}")
+        raise Exception("AI 服务暂时不可用，请稍后重试")
 
 
 async def get_ollama_response(
     messages: List[ChatMessage],
-    model: str = "qwen3:8b",
+    model: str = OLLAMA_MODEL,
     is_strict_template: bool = False,
     max_tokens: int = 40960,
     prefer_chat: bool = False,
@@ -308,53 +365,54 @@ async def get_ollama_response(
 
     try:
         async with httpx.AsyncClient(timeout=300.0) as client:
-            api_path = "/api/chat" if prefer_chat else "/api/generate"
+            last_error: Optional[Exception] = None
+            for base_url in get_ollama_base_urls():
+                plans = [(prefer_chat, False), (prefer_chat, True)]
+                if prefer_chat:
+                    plans.extend([(False, False), (False, True)])
 
-            if prefer_chat:
-                payload = {
-                    "model": model,
-                    "messages": [{"role": m.role, "content": m.content} for m in messages],
-                    "think": True,
-                    "stream": False,
-                    "options": {
-                        "temperature": temperature,
-                        "top_p": top_p,
-                        "num_ctx": 32768,
-                        "repeat_penalty": repeat_penalty,
-                        "max_tokens": max_tokens,
-                        "keep_alive": "24h",
-                    },
-                }
-            else:
-                payload = {
-                    "model": model,
-                    "prompt": prompt,
-                    "system": system_prompt,
-                    "think": True,
-                    "stream": False,
-                    "options": {
-                        "temperature": temperature,
-                        "top_p": top_p,
-                        "num_ctx": 32768,
-                        "repeat_penalty": repeat_penalty,
-                        "max_tokens": max_tokens,
-                        "keep_alive": "24h",
-                    },
-                }
+                for prefer_chat_mode, reduced in plans:
+                    api_path = "/api/chat" if prefer_chat_mode else "/api/generate"
+                    payload = _build_payload(
+                        messages, model, system_prompt, prompt,
+                        temperature, top_p, max_tokens, is_strict_template, prefer_chat_mode, reduced_max_tokens=reduced
+                    )
+                    payload["stream"] = False
+                    payload["options"]["repeat_penalty"] = repeat_penalty
 
-            try:
-                response = await client.post(f"{OLLAMA_URL}{api_path}", json=payload)
-            except (httpx.ConnectError, httpx.ReadTimeout):
-                response = await client.post(f"{OLLAMA_URL}{api_path}", json=payload)
+                    try:
+                        _log_request_meta(f"{base_url}{api_path}", payload)
+                        response = await client.post(f"{base_url}{api_path}", json=payload)
+                    except (httpx.ConnectError, httpx.ReadTimeout) as e:
+                        last_error = e
+                        logger.warning(f"[Ollama] 地址不可用，尝试回退: {base_url} - {e}")
+                        break
 
-            if response.status_code != 200:
-                raise Exception(f"Ollama API 错误: {response.status_code} - {response.text}")
+                    if response.status_code != 200:
+                        logger.error(f"[Ollama] 错误响应: {response.status_code} - {response.text}")
+                        err = OllamaHTTPStatusError(response.status_code, response.text)
+                        last_error = err
+                        if response.status_code in {404, 405, 500, 502, 503, 504}:
+                            continue
+                        raise err
 
-            data = response.json()
-            if prefer_chat:
-                message = data.get("message", {})
-                return message.get("content", "")
-            return data.get("response", "")
+                    data = response.json()
+                    if prefer_chat_mode:
+                        message = data.get("message", {})
+                        return message.get("content", "")
+                    return data.get("response", "")
 
+            if last_error:
+                raise last_error
+            raise Exception("AI 服务暂时不可用，请稍后重试")
+
+    except httpx.ConnectError:
+        raise Exception("无法连接到 Ollama 服务，请确保服务正在运行")
+    except OllamaHTTPStatusError as e:
+        logger.error(f"Ollama API 调用失败: {str(e)}")
+        if 400 <= e.status_code < 500:
+            raise Exception("模型配置或请求参数错误，请检查后重试")
+        raise Exception("AI 服务暂时不可用，请稍后重试")
     except Exception as e:
-        raise Exception(f"Ollama API 调用失败: {str(e)}")
+        logger.error(f"Ollama API 调用失败: {str(e)}")
+        raise Exception("AI 服务暂时不可用，请稍后重试")

@@ -88,7 +88,10 @@ async def get_user_by_username(username: str) -> Optional[Dict[str, Any]]:
                 "id": user.id,
                 "username": user.username,
                 "password_hash": user.password_hash,
-                "role": user.role
+                "role": user.role,
+                "is_active": user.is_active,
+                "locked_until": user.locked_until,
+                "login_attempts": user.login_attempts,
             }
         return None
 

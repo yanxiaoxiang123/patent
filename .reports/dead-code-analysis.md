@@ -1,11 +1,13 @@
 # 死代码分析报告
 
-生成时间: 2026-01-29
+生成时间: 2026-02-04
+更新: 2026-02-04
 
 ## 分析方法
 
 - Python: 手动分析导入依赖和文件使用情况
 - TypeScript/Vue: 检查导入语句和构建输出
+- 工具: knip, depcheck, ts-prune (未安装，使用手动分析)
 
 ---
 
@@ -19,33 +21,27 @@
 
 ---
 
-## 🔴 DANGER - 后端死代码
+## 🔴 DANGER - 后端死代码 (2026-02-04 新增)
 
-### 1. `backend/app/api/auth.py` (完全未使用)
+### 2. `backend/app/api/auth_simple.py` (完全未使用)
 
-**问题**: 定义了完整的 JWT 认证系统，但从未被任何文件导入使用。
+**问题**: 定义了简化版认证逻辑，但从未被任何文件导入使用。
 
 **证据**:
-- 搜索 `from app.api import auth` - 无结果
-- main.py 只导入了 `documents` 和 `chat`
-- main.py 中使用简单 token 认证而非 JWT
-
-**影响**: 删除此文件不会影响系统运行，因为实际使用的是 main.py 中内联的简单认证
+- main.py 只导入了 `documents` 和 `chat`，没有导入 auth_simple
+- main.py 自己实现了认证逻辑 (行 60-305)
+- DB_CONFIG 在 auth_simple.py 和 main.py 中重复定义
 
 **内容包含**:
-- JWT 令牌创建和验证
-- 密码哈希 (bcrypt)
-- 用户登录/注册端点
-- 依赖注入的 `get_current_user`
+- 简化的登录端点
+- 数据库查询函数 `get_user_from_db()`
+- Token 和 UserLogin Pydantic 模型
 
-```python
-# 实际使用中，认证在 main.py:116-142 实现
-# 使用简单 token 格式: simple_token_{user_id}_{username}
-```
+**可安全删除**: 是
 
 ---
 
-### 2. `backend/app/services/user_service.py` (间接死代码)
+### 3. `backend/app/services/user_service.py` (间接死代码)
 
 **问题**: 只被 `auth.py` 导入使用，而 `auth.py` 是死代码
 
@@ -61,16 +57,14 @@
 
 ## 🟠 CAUTION - 后端死代码
 
-### 3. `backend/app/schemas/document.py` (未被使用)
+### 3. `backend/app/schemas/document.py` (已恢复)
 
-**问题**: 定义了完整的 Pydantic models，但从未被导入
+**状态**: ⚠️ **警告** - 此文件实际被 `documents.py` 使用
 
 **证据**:
-- 搜索 `from app.schemas` - 无结果
-- main.py 和 api/ 中的请求/响应直接使用内联定义
+- `api/documents.py:20-23` 导入: `DocumentResponse, DocumentListResponse, DocumentUploadRequest, DocumentParseRequest, DocumentParseResponse, DocumentStatus, FileType`
 
-**建议**: 这些 schemas 设计良好，可能是有意保留供将来使用
-- 如果确定不使用，可考虑删除或移到 docs/ 作为 API 文档参考
+**已恢复**: 文件已恢复，因清理时误删
 
 ---
 
@@ -109,21 +103,74 @@
 
 ---
 
+### 7. `frontend/src/services/review.ts` (完全未使用)
+
+**问题**: 定义了审核相关函数，但从未被任何文件导入使用。
+
+**证据**:
+- 搜索 `from "@/services/review"` - 无结果
+- 搜索 `performFormalCheck|performLogicCheck|getFormalCheckSample` - 无结果
+
+**内容包含**:
+- `performFormalCheck()` - 形式审查
+- `performLogicCheck()` - 逻辑审查
+- `getFormalCheckSample()` - 获取示例
+
+**可安全删除**: 是
+
+---
+
+### 8. `frontend/src/views/SimplePatentChat.vue.backup` (备份文件)
+
+**问题**: 开发过程中创建的备份文件，不再需要。
+
+**大小**: 78578 字节 (~700+ 行)
+
+**可安全删除**: 是
+
+---
+
+### 9. `frontend/src/services/auth.ts` - 部分未使用
+
+**问题**: 导出了未使用的函数。
+
+**分析**:
+- 使用的函数: `login`, `logout` (被 stores/auth.ts 导入)
+- 未使用的函数: `getCurrentUser`, `register`, `changePassword`
+
+**建议**: 删除未使用的函数导出
+
+---
+
 ## 📦 可安全删除的文件清单
 
-### 立即可删除 (SAFE)
+### 立即可删除 (SAFE) - 2026-02-04 更新
 ```
 frontend/src/router/index.ts
+frontend/src/services/review.ts
+frontend/src/views/SimplePatentChat.vue.backup
+backend/app/api/auth.py           # JWT 认证，未使用
+backend/app/api/auth_simple.py    # 简化认证，未使用
+backend/app/services/user_service.py
 backend/app/services/__init__.py
 backend/app/schemas/__init__.py
-backend/app/api/auth.py           # ⚠️ 确认 main.py 中的认证已覆盖所有场景
-backend/app/services/user_service.py
-backend/app/schemas/document.py   # ⚠️ 仅当确定不使用这些 schemas
 ```
 
 ### 需验证后删除 (CAUTION)
 ```
-backend/app/schemas/              # 整个目录，确认无其他文件使用
+backend/app/api/chat.py            # 复杂逻辑，需测试所有流程
+frontend/src/services/documents.ts # 需验证所有文档操作
+frontend/src/utils/patentPrompts.ts
+frontend/src/composables/useChatSession.ts
+frontend/src/utils/chat/
+```
+
+### 清理 auth.ts 未使用的导出
+```typescript
+// 删除以下导出:
+- getCurrentUser()
+- register()
+- changePassword()
 ```
 
 ---
@@ -143,19 +190,65 @@ backend/app/schemas/              # 整个目录，确认无其他文件使用
 
 | 类别 | 数量 | 严重级别 |
 |------|------|----------|
-| 死代码文件 | 6 | 见上表 |
-| 空文件 | 2 | SAFE |
-| 未使用路由 | 1 | SAFE |
+| 死代码文件 (已删除) | 5 | DANGER |
+| 死代码文件 (前端) | 3 | SAFE |
+| 未使用函数/导出 | 3 | SAFE |
+| 空文件 | 2 | 已恢复 |
+| 备份文件 | 1 | 已删除 |
+| 误删已恢复 | 1 | schemas/document.py |
+
+**实际删除**: 9+ 项
 
 ---
 
 ## 建议清理顺序
 
-1. **第一步** (安全): 删除 `frontend/src/router/index.ts`
-2. **第二步** (安全): 删除空 `__init__.py` 文件
-3. **第三步** (验证): 删除 `backend/app/api/auth.py` 和 `user_service.py`，测试认证功能
-4. **第四步** (可选): 评估 `schemas/` 目录的用途
+### 第一阶段: 立即安全删除
+1. 删除 `frontend/src/router/index.ts`
+2. 删除 `frontend/src/services/review.ts`
+3. 删除 `frontend/src/views/SimplePatentChat.vue.backup`
+4. 删除空 `__init__.py` 文件
+
+### 第二阶段: 后端死代码删除
+5. 删除 `backend/app/api/auth.py`
+6. 删除 `backend/app/api/auth_simple.py`
+7. 删除 `backend/app/services/user_service.py`
+8. 删除 `backend/app/schemas/__init__.py`
+9. 删除 `backend/app/services/__init__.py`
+
+⚠️ 注意: `backend/app/schemas/document.py` 已被 **恢复**，因为它被 `documents.py` 使用
+
+### 第三阶段: 清理前端代码
+10. 清理 `frontend/src/services/auth.ts` 未使用的导出
+11. 验证 `frontend/src/utils/` 目录下的工具文件使用情况
+
+### 验证步骤
+- [ ] 后端启动: `python -m uvicorn app.main:app --reload`
+- [ ] 前端构建: `npm run build`
+- [ ] 登录/登出功能测试
+- [ ] 文档上传/解析测试
+- [ ] AI 对话测试
+- [ ] 管理员功能测试
 
 ---
+
+---
+
+## ⚠️ 重要教训
+
+### 误删恢复 (2026-02-04)
+
+**错误**: 删除了 `backend/app/schemas/document.py`
+
+**影响**: 后端启动失败
+```
+ModuleNotFoundError: No module named 'app.schemas.document'
+```
+
+**原因**: 报告中错误标记 `schemas/document.py` 为未使用，但实际被 `api/documents.py` 导入使用
+
+**解决**: 已恢复文件
+
+**教训**: 删除任何文件前，必须先检查实际导入情况，不能仅依赖导入搜索结果
 
 *报告生成工具: Refactor Clean Agent*

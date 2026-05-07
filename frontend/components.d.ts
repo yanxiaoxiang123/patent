@@ -8,7 +8,6 @@ export {}
 declare module 'vue' {
   export interface GlobalComponents {
     ChatSessionItem: typeof import('./src/components/chat/ChatSessionItem.vue')['default']
-    ChatSidebar: typeof import('./src/components/chat/ChatSidebar.vue')['default']
     ChatTopBar: typeof import('./src/components/chat/ChatTopBar.vue')['default']
     ElButton: typeof import('element-plus/es')['ElButton']
     ElDialog: typeof import('element-plus/es')['ElDialog']
@@ -20,6 +19,7 @@ declare module 'vue' {
     ElIcon: typeof import('element-plus/es')['ElIcon']
     ElInput: typeof import('element-plus/es')['ElInput']
     ElOption: typeof import('element-plus/es')['ElOption']
+    ElPagination: typeof import('element-plus/es')['ElPagination']
     ElPopconfirm: typeof import('element-plus/es')['ElPopconfirm']
     ElSelect: typeof import('element-plus/es')['ElSelect']
     ElTable: typeof import('element-plus/es')['ElTable']
@@ -41,5 +41,8 @@ declare module 'vue' {
     SkeletonLoader: typeof import('./src/components/common/SkeletonLoader.vue')['default']
     ThinkingPanel: typeof import('./src/components/chat/ThinkingPanel.vue')['default']
     VirtualMessageList: typeof import('./src/components/common/VirtualMessageList.vue')['default']
+  }
+  export interface ComponentCustomProperties {
+    vLoading: typeof import('element-plus/es')['ElLoadingDirective']
   }
 }

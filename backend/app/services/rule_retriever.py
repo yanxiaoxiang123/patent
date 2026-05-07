@@ -24,7 +24,7 @@ class RuleRetriever:
         获取完整的system prompt
 
         Args:
-            template_id: 模板ID (1=普通案例, 3=专案案例)
+            template_id: 模板ID (1=普通案例, 2=专利审核指导, 3=专案案例, 5=IPC分类指导)
             case_type: 案件类型（实用新型/普通发明），可选
             extra_instructions: 额外指令，可选
 

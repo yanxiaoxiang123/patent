@@ -106,22 +106,18 @@ const handleCopy = async () => {
 .message-bubble {
   display: flex;
   gap: 12px;
-  padding: 12px 16px;
+  padding: 10px 16px;
   max-width: 100%;
   width: 100%;
   margin: 0 auto;
-  animation: messageIn 0.3s ease;
+  animation: messageIn 0.2s ease;
   box-sizing: border-box;
 }
 
-/* AI 消息 - 左侧显示 */
-/* AI 消息 - 左侧显示 */
 .message-bubble.role-ai {
   justify-content: flex-start;
-  background: rgba(59, 130, 246, 0.03);
 }
 
-/* 用户消息 - 右侧显示 */
 .message-bubble.role-user {
   flex-direction: row-reverse;
   justify-content: flex-end;
@@ -129,8 +125,8 @@ const handleCopy = async () => {
 
 .bubble-avatar {
   flex-shrink: 0;
-  width: 36px;
-  height: 36px;
+  width: 32px;
+  height: 32px;
 }
 
 .avatar {
@@ -140,29 +136,28 @@ const handleCopy = async () => {
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 18px;
+  font-size: 16px;
 }
 
 .ai-avatar {
-  background: linear-gradient(135deg, #0f172a 0%, #111827 100%);
-  color: #f9fafb;
+  background: var(--bg-tertiary);
+  color: var(--text-secondary);
 }
 
 .user-avatar {
-  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+  background: var(--primary-color);
   color: #fff;
 }
 
 .bubble-content {
   flex: 1;
   min-width: 0;
-  max-width: calc(100% - 48px);
+  max-width: calc(100% - 44px);
 }
 
-/* 响应式调整 */
 @media (min-width: 768px) {
   .message-bubble {
-    padding: 14px 20px;
+    padding: 12px 20px;
   }
 
   .bubble-content {
@@ -172,14 +167,14 @@ const handleCopy = async () => {
 
 @media (min-width: 1024px) {
   .bubble-content {
-    max-width: 600px;
+    max-width: 560px;
   }
 }
 
 @keyframes messageIn {
   from {
     opacity: 0;
-    transform: translateY(10px);
+    transform: translateY(6px);
   }
   to {
     opacity: 1;

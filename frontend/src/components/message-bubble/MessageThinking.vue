@@ -75,24 +75,23 @@ const toggleExpand = () => {
 
 <style scoped>
 .message-thinking {
-  margin-bottom: 12px;
+  margin-bottom: 10px;
 }
 
 .thinking-toggle {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  padding: 6px 10px;
-  background: rgba(59, 130, 246, 0.08);
-  border: 1px solid rgba(59, 130, 246, 0.2);
-  border-radius: 8px;
+  padding: 4px 8px;
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: all 0.15s ease;
 }
 
 .thinking-toggle:hover {
-  background: rgba(59, 130, 246, 0.12);
-  border-color: rgba(59, 130, 246, 0.3);
+  border-color: var(--primary-color);
 }
 
 .thinking-toggle-header {
@@ -102,20 +101,20 @@ const toggleExpand = () => {
 }
 
 .thinking-icon {
-  color: #3b82f6;
-  font-size: 14px;
+  color: var(--primary-color);
+  font-size: 13px;
 }
 
 .thinking-title {
   font-size: 12px;
-  color: #3b82f6;
+  color: var(--primary-color);
   font-weight: 500;
 }
 
 .toggle-arrow {
   font-size: 10px;
-  color: #3b82f6;
-  transition: transform 0.3s ease;
+  color: var(--text-muted);
+  transition: transform 0.2s ease;
 }
 
 .message-thinking.expanded .toggle-arrow {
@@ -123,29 +122,29 @@ const toggleExpand = () => {
 }
 
 .thinking-panel {
-  margin-top: 10px;
-  padding: 12px 14px;
-  background: rgba(248, 250, 252, 0.9);
-  border: 1px solid rgba(226, 232, 240, 0.8);
-  border-radius: 10px;
+  margin-top: 8px;
+  padding: 10px 12px;
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-sm);
   font-size: 13px;
-  color: #64748b;
-  line-height: 1.7;
+  color: var(--text-secondary);
+  line-height: 1.6;
 }
 
 .thinking-content {
-  color: #64748b;
+  color: var(--text-secondary);
 }
 
 .thinking-slide-enter-active,
 .thinking-slide-leave-active {
-  transition: all 0.3s ease;
+  transition: all 0.2s ease;
   overflow: hidden;
 }
 
 .thinking-slide-enter-from,
 .thinking-slide-leave-to {
   opacity: 0;
-  transform: translateY(-10px);
+  transform: translateY(-6px);
 }
 </style>

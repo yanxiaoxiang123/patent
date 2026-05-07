@@ -1,5 +1,6 @@
 """认证 API 模块"""
 import logging
+from datetime import datetime, timedelta, timezone
 from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException, status, Request
 from pydantic import BaseModel, Field
@@ -10,9 +11,14 @@ from app.services.user_repository import UserRepository, get_user_dict_by_userna
 from app.utils.database import AsyncSessionLocal
 from app.utils.passwords import hash_password, verify_password, needs_rehash
 from app.models import User as UserModel
+from app.schemas.response import ApiResponse
 
 logger = logging.getLogger(__name__)
 router = APIRouter(tags=["认证"])
+
+# 登录锁定配置
+LOGIN_MAX_ATTEMPTS = 5
+LOCKOUT_DURATION_MINUTES = 15
 
 
 # ===================== Pydantic Models =====================
@@ -103,8 +109,8 @@ async def require_admin(request: Request) -> dict:
 
 # ===================== 认证路由 =====================
 
-@router.post("/login", response_model=TokenResponse)
-async def login(user_data: UserLogin):
+@router.post("/login")
+async def login(user_data: UserLogin, request: Request):
     """用户登录"""
     logger.info(f"尝试登录用户: {user_data.username}")
 
@@ -121,13 +127,55 @@ async def login(user_data: UserLogin):
     username = user_dict["username"]
     password_hash = user_dict["password_hash"]
     role = user_dict["role"]
+    is_active = user_dict.get("is_active", True)
+    locked_until = user_dict.get("locked_until")
+    login_attempts = user_dict.get("login_attempts", 0)
+
+    # 检查账户是否被禁用
+    if not is_active:
+        logger.warning(f"账户已被禁用: {user_data.username}")
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="账户已被禁用，请联系管理员"
+        )
+
+    # 检查账户是否被锁定
+    now = datetime.now()  # naive datetime for MySQL compatibility
+    if locked_until:
+        locked_until_naive = locked_until.replace(tzinfo=None) if locked_until.tzinfo is not None else locked_until
+        if now < locked_until_naive:
+            logger.warning(f"账户已被锁定: {user_data.username}")
+            raise HTTPException(
+                status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+                detail="请稍后再试"
+            )
 
     if not verify_password(user_data.password, password_hash):
+        # 登录失败，记录失败次数
+        async with AsyncSessionLocal() as session:
+            user = await UserRepository.get_by_id(session, user_id)
+            if user:
+                user.login_attempts = user.login_attempts + 1
+                if user.login_attempts >= LOGIN_MAX_ATTEMPTS:
+                    user.locked_until = datetime.now() + timedelta(minutes=LOCKOUT_DURATION_MINUTES)
+                    logger.warning(f"账户已被锁定（连续失败{LOGIN_MAX_ATTEMPTS}次）: {user_data.username}")
+                await session.commit()
+
         logger.warning(f"密码错误: {user_data.username}")
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="密码错误"
         )
+
+    # 登录成功，重置失败次数，更新最后登录信息
+    async with AsyncSessionLocal() as session:
+        user = await UserRepository.get_by_id(session, user_id)
+        if user:
+            user.login_attempts = 0
+            user.locked_until = None
+            user.last_login_at = datetime.now()
+            user.last_login_ip = request.client.host if request.client else None
+            await session.commit()
 
     if needs_rehash(password_hash):
         try:
@@ -143,7 +191,7 @@ async def login(user_data: UserLogin):
 
     access_token = create_token(user_id, username, role or "user")
 
-    return {
+    return ApiResponse.ok({
         "access_token": access_token,
         "token_type": "bearer",
         "user": {
@@ -153,7 +201,7 @@ async def login(user_data: UserLogin):
             "full_name": None,
             "role": role
         }
-    }
+    }).model_dump()
 
 
 @router.get("/me")
@@ -185,7 +233,7 @@ async def list_users(current_admin: dict = Depends(require_admin)):
                 "created_at": user.created_at.isoformat() if user.created_at else None
             })
 
-        return {"data": users}
+        return ApiResponse.ok({"users": users}, meta={"total": len(users)}).model_dump()
 
 
 @router.post("/users")
@@ -208,7 +256,7 @@ async def create_user(payload: CreateUserRequest, current_admin: dict = Depends(
             role="user"
         )
 
-        return {"message": "创建成功", "user_id": user.id}
+        return ApiResponse.ok({"user_id": user.id}, message="创建成功").model_dump()
 
 
 @router.delete("/users/{user_id}")
@@ -218,4 +266,4 @@ async def delete_user(user_id: int, current_admin: dict = Depends(require_admin)
         success = await UserRepository.delete(session, user_id)
         if not success:
             raise HTTPException(status_code=404, detail="用户不存在")
-        return {"message": "删除成功"}
+        return ApiResponse.ok(message="删除成功").model_dump()

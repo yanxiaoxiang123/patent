@@ -24,7 +24,7 @@ export function useChatSession() {
   const loadSessions = async () => {
     try {
       loading.value = true;
-      const data = await api.get("/ai/sessions");
+      const data: any = await api.get("/ai/sessions");
       const loadedSessions: ChatSession[] = [];
 
       for (const s of data) {
@@ -54,14 +54,22 @@ export function useChatSession() {
    */
   const fetchSessionMessages = async (sessionId: number): Promise<ChatMessage[]> => {
     try {
-      const data = await api.get(`/ai/sessions/${sessionId}`);
+      const sessionData: any = await api.get(`/ai/sessions/${sessionId}`);
+
+      // 防御性检查
+      if (!sessionData || typeof sessionData !== 'object') {
+        console.warn("会话数据为空或格式错误:", sessionData);
+        return [];
+      }
 
       // 获取会话关联的文档信息
       let documentInfo: any = null;
-      if (data.document_id) {
+      if (sessionData.document_id) {
         try {
-          const docData = await api.get(`/documents/${data.document_id}`);
-          documentInfo = docData;
+          const docData = await api.get(`/documents/${sessionData.document_id}`);
+          if (docData) {
+            documentInfo = docData;
+          }
         } catch (e) {
           console.warn("获取文档信息失败:", e);
         }
@@ -81,13 +89,27 @@ export function useChatSession() {
         }];
       };
 
-      const list: ChatMessage[] = (data.messages || []).map((item: any) => ({
-        role: item.role,
-        content: item.content || "",
-        fullContent: item.content || "",
-        timestamp: item.created_at ? new Date(item.created_at) : new Date(),
-        attachments: item.role === "user" ? getAttachments(item.document_id) : undefined,
-      }));
+      const list: ChatMessage[] = (sessionData.messages || []).map((item: any) => {
+        let content = item.content || "";
+
+        // 如果是用户消息、有附件、内容很短或为空，认为是模板审核，显示简短提示
+        const isUserMessage = item.role === "user";
+        const hasAttachments = !!item.document_id;
+        // 如果消息内容很短（少于30字符）且有附件，认为是模板审核场景
+        const isLikelyTemplateAudit = content.length < 30;
+
+        if (isUserMessage && hasAttachments && isLikelyTemplateAudit) {
+          content = "（已上传文档，按模板审核）";
+        }
+
+        return {
+          role: item.role,
+          content: content,
+          fullContent: item.content || "",
+          timestamp: item.created_at ? new Date(item.created_at) : new Date(),
+          attachments: item.role === "user" ? getAttachments(item.document_id) : undefined,
+        };
+      });
 
       const sessionIndex = sessions.value.findIndex((s) => s.id === sessionId);
       if (sessionIndex !== -1) {

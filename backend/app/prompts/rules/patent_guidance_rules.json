@@ -1,0 +1,230 @@
+{
+  "template_id": 2,
+  "template_name": "专利审核指导专家",
+  "case_types": ["实用新型", "普通发明", "外观设计"],
+  "description": "专利申请文件审核指导，帮助学习专利审核技巧和注意事项",
+  "output_structure": {
+    "section_1": {
+      "id": "document_overview",
+      "title": "文档整体概览",
+      "description": "分析专利文档的基本信息和结构"
+    },
+    "section_2": {
+      "id": "key_innovation_points",
+      "title": "关键技术特征和创新点",
+      "description": "识别和提炼技术方案的创新点"
+    },
+    "section_3": {
+      "id": "format_guidance",
+      "title": "格式规范指导",
+      "description": "指出格式问题并给出修改建议"
+    },
+    "section_4": {
+      "id": "content_guidance",
+      "title": "内容质量指导",
+      "description": "分析内容质量，提供撰写建议"
+    },
+    "section_5": {
+      "id": "learning_points",
+      "title": "专利审核知识点",
+      "description": "总结本次审核涉及的重要知识点"
+    }
+  },
+  "rules": {
+    "document_overview": {
+      "description": "文档整体概览",
+      "check_items": [
+        {
+          "id": "DO-001",
+          "item": "文档类型识别",
+          "check_point": "识别文档类型（发明/实用新型/外观设计）",
+          "method": "根据权利要求内容判断保护客体"
+        },
+        {
+          "id": "DO-002",
+          "item": "标题分析",
+          "check_point": "分析发明名称是否准确概括技术方案",
+          "method": "检查标题与技术方案的匹配度"
+        },
+        {
+          "id": "DO-003",
+          "item": "摘要分析",
+          "check_point": "分析摘要是否简明扼要地描述技术方案",
+          "method": "检查摘要的技术信息完整性"
+        },
+        {
+          "id": "DO-004",
+          "item": "权利要求统计",
+          "check_point": "统计权利要求数量和类型",
+          "method": "计数独立权利要求和从属权利要求"
+        }
+      ]
+    },
+    "key_innovation_points": {
+      "description": "关键技术特征和创新点",
+      "check_items": [
+        {
+          "id": "KI-001",
+          "item": "核心创新点识别",
+          "check_point": "识别技术方案的核心创新点",
+          "method": "分析权利要求中的技术特征，找出区别于现有技术的特征"
+        },
+        {
+          "id": "KI-002",
+          "item": "技术问题提炼",
+          "check_point": "提炼发明所要解决的技术问题",
+          "method": "从背景技术和有益效果中提取"
+        },
+        {
+          "id": "KI-003",
+          "item": "技术方案概要",
+          "check_point": "概括技术方案的核心内容",
+          "method": "用简洁语言描述技术方案"
+        },
+        {
+          "id": "KI-004",
+          "item": "有益效果分析",
+          "check_point": "分析技术方案的有益效果",
+          "method": "判断有益效果是否具体、可验证"
+        }
+      ]
+    },
+    "format_guidance": {
+      "description": "格式规范指导",
+      "categories": {
+        "A": {
+          "name": "权利要求格式",
+          "check_items": [
+            {
+              "id": "FG-A-001",
+              "item": "权利要求编号",
+              "check_point": "权利要求编号是否规范",
+              "method": "检查是否使用'权利要求1'等规范表述"
+            },
+            {
+              "id": "FG-A-002",
+              "item": "引用格式",
+              "check_point": "权利要求引用是否规范",
+              "method": "检查是否使用'根据权利要求1所述的...'格式"
+            },
+            {
+              "id": "FG-A-003",
+              "item": "技术特征描述",
+              "check_point": "技术特征描述是否规范",
+              "method": "检查是否使用'包括'、'由...组成'等规范用语"
+            }
+          ]
+        },
+        "B": {
+          "name": "说明书格式",
+          "check_items": [
+            {
+              "id": "FG-B-001",
+              "item": "章节完整性",
+              "check_point": "说明书章节是否完整",
+              "method": "检查技术领域、背景技术、发明内容等章节"
+            },
+            {
+              "id": "FG-B-002",
+              "item": "标题格式",
+              "check_point": "章节标题是否规范",
+              "method": "检查是否使用规范的五号黑体标题"
+            },
+            {
+              "id": "FG-B-003",
+              "item": "附图引用",
+              "check_point": "附图引用是否规范",
+              "method": "检查是否使用'如图1所示'等规范表述"
+            }
+          ]
+        }
+      }
+    },
+    "content_guidance": {
+      "description": "内容质量指导",
+      "check_items": [
+        {
+          "id": "CG-001",
+          "item": "背景技术质量",
+          "check_point": "背景技术描述是否充分",
+          "method": "分析现有技术的不足，为技术问题做铺垫"
+        },
+        {
+          "id": "CG-002",
+          "item": "技术问题明确性",
+          "check_point": "技术问题是否明确具体",
+          "method": "检查技术问题是否可解决、可验证"
+        },
+        {
+          "id": "CG-003",
+          "item": "方案对应性",
+          "check_point": "技术方案是否针对技术问题",
+          "method": "检查问题-方案-效果是否形成闭环"
+        },
+        {
+          "id": "CG-004",
+          "item": "实施例充分性",
+          "check_point": "具体实施方式是否充分",
+          "method": "检查实施例是否支持权利要求保护范围"
+        },
+        {
+          "id": "CG-005",
+          "item": "权利要求层次",
+          "check_point": "权利要求层次是否合理",
+          "method": "检查从属权利要求是否对独权进行有效限定"
+        }
+      ]
+    },
+    "learning_points": {
+      "description": "专利审核知识点",
+      "categories": {
+        "novelty": {
+          "name": "新颖性要点",
+          "knowledge": [
+            "新颖性是指该发明或实用新型不属于现有技术",
+            "现有技术是指申请日以前在国内外为公众所知的技术",
+            "抵触申请也会破坏新颖性"
+          ]
+        },
+        "inventiveness": {
+          "name": "创造性要点",
+          "knowledge": [
+            "创造性是指与现有技术相比具有突出的实质性特点和显著进步",
+            "判断创造性需要考虑技术问题、技术方案、技术效果",
+            "显而易见性是创造性的主要障碍"
+          ]
+        },
+        "practicality": {
+          "name": "实用性要点",
+          "knowledge": [
+            "实用性是指该发明或实用新型能够制造或使用并产生积极效果",
+            "技术方案必须具有可实施性",
+            "有益效果不是必须的，但有助提高授权可能性"
+          ]
+        }
+      }
+    }
+  },
+  "output_format": {
+    "section_1": {
+      "title": "一、文档整体概览",
+      "fields": ["文档类型", "发明名称", "摘要概要", "权利要求统计"]
+    },
+    "section_2": {
+      "title": "二、关键技术特征和创新点",
+      "fields": ["核心创新点", "技术问题", "技术方案概要", "有益效果"]
+    },
+    "section_3": {
+      "title": "三、格式规范指导",
+      "fields": ["权利要求格式问题", "说明书格式问题", "修改建议"]
+    },
+    "section_4": {
+      "title": "四、内容质量指导",
+      "fields": ["内容亮点", "待改进点", "具体修改建议"]
+    },
+    "section_5": {
+      "title": "五、专利审核知识点",
+      "fields": ["新颖性要点", "创造性要点", "实用性要点", "本次涉及的重点"]
+    }
+  }
+}
