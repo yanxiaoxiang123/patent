@@ -1,175 +1,197 @@
-# 智能专利辅助审核系统 (IPRS)
+# IPRS - Intelligent Patent Review System
 
-基于 AI 技术的专利文档智能审核平台，帮助专利代理人提高审核效率和文档质量。
+[![Python](https://img.shields.io/badge/Python-3.10+-blue.svg)](https://www.python.org/)
+[![FastAPI](https://img.shields.io/badge/FastAPI-0.100+-009688.svg)](https://fastapi.tiangolo.com/)
+[![Vue](https://img.shields.io/badge/Vue-3.x-4FC08D.svg)](https://vuejs.org/)
+[![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 
-## 🎯 项目概述
+AI-powered patent document review platform that helps patent agents improve review efficiency and document quality through automated formal checks, logic analysis, and interactive editing.
 
-### 核心功能
-- **文档上传与解析**: 支持 .docx 和 .pdf 格式，智能分段解析
-- **AI 形式审查**: 基于 Ollama (Qwen3-7b) 的快速错别字、格式检查
-- **深度逻辑分析**: 基于 Coze Agent 的权利要求支持性分析
-- **交互式编辑**: 实时高亮错误，一键采纳建议
-- **报告导出**: 生成专业的审核报告
+## Features
 
-### 技术架构
-- **后端**: Python FastAPI + MySQL + SQLAlchemy
-- **前端**: Vue 3 + Element Plus + Vite
-- **AI 服务**: 本地 Ollama + 云端 Coze API
+- **Document Parsing** -- Upload and parse `.docx` and `.pdf` patent documents with intelligent text segmentation
+- **AI Formal Review** -- Automated typo detection, format validation, and compliance checks powered by Ollama (Qwen3)
+- **Rule-Based Review Agents** -- Four specialized review templates: general case, patent guidance, project case, and IPC classification
+- **Real-Time Streaming** -- SSE-based streaming responses with thinking process visualization
+- **Interactive Chat** -- Multi-session chat interface with message persistence, document context, and markdown rendering
+- **User Management** -- Token-based authentication with admin panel for user administration
+- **Rate Limiting** -- Redis-backed request throttling with configurable limits
 
-## 📁 项目结构
+## Tech Stack
+
+| Layer | Technology |
+|-------|-----------|
+| Backend | Python / FastAPI / SQLAlchemy (async) |
+| Frontend | Vue 3 / TypeScript / Element Plus / Vite |
+| AI Engine | Ollama (local LLM) with adapter pattern |
+| Database | MySQL with aiomysql async driver |
+| Cache | Redis (rate limiting) |
+| Deployment | Nginx / Uvicorn / Systemd |
+
+## Architecture
 
 ```
-patent/
-├── patent/                 # Python 虚拟环境
-├── backend/                # 后端代码
+frontend (Vue 3)                  backend (FastAPI)
+     │                                  │
+     │  SSE /api/ai/chat               │
+     ├─────────────────────────────────►│
+     │  REST /api/auth/*                │
+     │  REST /api/documents/*           │
+     │  REST /api/admin/*               │
+     │                                  │
+     │                          ┌───────┴───────┐
+     │                          │  AI Adapter   │
+     │                          ├───────────────┤
+     │                          │  Ollama       │
+     │                          │  (local LLM)  │
+     │                          └───────────────┘
+     │                          ┌───────┴───────┐
+     │                          │  Rule Loader  │
+     │                          │  (JSON rules) │
+     │                          └───────────────┘
+     │                                  │
+     ▼                                  ▼
+  Browser                      MySQL + Redis
+```
+
+## Project Structure
+
+```
+├── backend/
 │   ├── app/
-│   │   ├── main.py        # FastAPI 应用入口
-│   │   ├── models/        # SQLAlchemy 数据模型
-│   │   ├── api/           # API 路由
-│   │   ├── schemas/       # Pydantic 数据模式
-│   │   ├── core/          # 核心功能
-│   │   ├── services/      # 业务逻辑
-│   │   └── utils/         # 工具函数
-│   ├── .env              # 环境变量配置
-│   ├── requirements.txt  # Python 依赖
-│   └── run.py            # 启动脚本
-├── database/              # 数据库脚本
-│   ├── create_tables.sql
-│   └── insert_test_data.sql
-├── CLAUDE.md             # Claude 项目配置
-└── README.md
+│   │   ├── api/             # Auth, Chat, Documents, Admin routes
+│   │   ├── core/            # Config, security, middleware, Redis client
+│   │   ├── models/          # SQLAlchemy ORM models
+│   │   ├── schemas/         # Pydantic request/response schemas
+│   │   ├── services/        # AI adapter, document parser, rule retriever
+│   │   ├── prompts/rules/   # Patent review rule templates (JSON)
+│   │   └── utils/           # Database, password hashing, seed users
+│   ├── tests/
+│   └── requirements.txt
+├── frontend/
+│   ├── src/
+│   │   ├── components/      # Chat, message-bubble, common UI
+│   │   ├── composables/     # Vue composables (chat, scroll, upload, etc.)
+│   │   ├── services/        # API client, auth, documents, admin
+│   │   ├── stores/          # Pinia stores (auth, chat, documents)
+│   │   ├── views/           # Login, AdminUsers, SimplePatentChat
+│   │   └── utils/           # Chat utilities, patent prompt templates
+│   └── package.json
+├── deploy/                  # Nginx config, systemd, supervisor, nohup scripts
+├── docs/                    # Documentation and migration scripts
+└── pic/                     # Static images
 ```
 
-## 🚀 快速开始
+## Quick Start
 
-### 环境要求
+### Prerequisites
+
 - Python 3.10+
-- Node.js 16+
+- Node.js 18+
 - MySQL 8.0+
-- Ollama (已安装 Qwen3-7b 模型)
+- [Ollama](https://ollama.com) with a model installed (e.g., `ollama pull qwen3:8b`)
 
-### 1. 激活虚拟环境
-```bash
-# Windows
-patent\Scripts\activate
+### Backend
 
-# Linux/Mac
-source patent/bin/activate
-```
-
-### 2. 安装后端依赖
 ```bash
 cd backend
+
+# Create virtual environment
+python -m venv .venv
+source .venv/bin/activate   # Linux/Mac
+# .venv\Scripts\activate    # Windows
+
+# Install dependencies
 pip install -r requirements.txt
+
+# Copy and configure environment
+cp .env.example .env
+# Edit .env with your database credentials and secrets
+
+# Start development server
+python -m uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 ```
 
-### 3. 配置数据库
-- 确保 MySQL 服务已启动
-- 用户名: your-db-user, 密码: your-db-password
-- 执行 `python ../init_database.py` 初始化数据库
+API docs available at `http://localhost:8000/docs`
 
-### 4. 配置环境变量
-编辑 `backend/.env` 文件：
-```
-DATABASE_URL=mysql+aiomysql://user:password@localhost:3306/iprs
-TOKEN_SECRET=your-secure-secret-key
-COZE_API_KEY=your-coze-api-key-here
-```
+### Frontend
 
-### 5. 启动后端服务
 ```bash
-cd backend
-python run.py
+cd frontend
+
+# Install dependencies
+npm install
+
+# Start development server
+npm run dev
 ```
 
-服务将在 http://localhost:8000 启动
+The dev server runs at `http://localhost:5173` and proxies API requests to the backend.
 
-### 6. API 文档
-- Swagger UI: http://localhost:8000/docs
-- ReDoc: http://localhost:8000/redoc
+## Configuration
 
-## 📊 数据库设计
+Copy `backend/.env.example` to `backend/.env` and configure:
 
-### 用户表 (users)
-- id, username, password_hash, role, created_at, updated_at
+| Variable | Description | Required |
+|----------|-------------|----------|
+| `TOKEN_SECRET` | Secret key for JWT token signing | Yes |
+| `DB_HOST` / `DB_PORT` / `DB_USER` / `DB_PASSWORD` / `DB_NAME` | Database connection | Yes |
+| `OLLAMA_URL` | Ollama server URL | No (default: `http://localhost:11434`) |
+| `OLLAMA_MODEL` | Model name | No (default: `qwen3:8b`) |
+| `REDIS_HOST` / `REDIS_PORT` | Redis for rate limiting | Optional |
+| `CORS_ORIGINS` | Allowed CORS origins (JSON array) | No |
+| `RATE_LIMIT_MAX` | Requests per minute | No (default: 100) |
 
-### 文档表 (documents)
-- id, user_id, title, file_path, file_type, parsed_content, status
+## API Overview
 
-### 审核记录表 (review_records)
-- id, document_id, review_type, model_version, result_json, score
+| Endpoint | Description |
+|----------|-------------|
+| `POST /api/auth/login` | User login |
+| `POST /api/auth/logout` | User logout |
+| `GET /api/auth/me` | Current user info |
+| `POST /api/documents/upload` | Upload patent document |
+| `GET /api/documents` | List user documents |
+| `GET /api/documents/{id}` | Get document details |
+| `POST /api/ai/chat` | Send chat message (SSE streaming) |
+| `GET /api/ai/sessions` | List chat sessions |
+| `GET /api/admin/users` | Admin: list users |
+| `POST /api/admin/users` | Admin: create user |
 
-## 🔧 开发指南
+## Review Agents
 
-### 后端开发
-- 使用 SQLAlchemy ORM 进行数据库操作
-- 采用异步编程模式
-- 遵循 RESTful API 设计规范
-- 使用 Pydantic 进行数据验证
+The system includes four rule-based review agents defined as JSON templates:
 
-### 前端开发 (待实现)
-- Vue 3 Composition API
-- Element Plus 组件库
-- Pinia 状态管理
-- Axios HTTP 客户端
+| ID | Name | Purpose |
+|----|------|---------|
+| 1 | General Case Review | Standard patent case review |
+| 2 | Patent Guidance | Patent audit guidance |
+| 3 | Project Case Review | Special project case review |
+| 5 | IPC Classification | IPC classification guidance |
 
-## 🤖 AI 集成
+Rules are loaded from `backend/app/prompts/rules/` and injected into the system prompt before sending to the LLM.
 
-### 本地 Ollama
-- 模型: Qwen3-7b
-- 用途: 快速形式检查
-- 端点: http://localhost:11434
+## Deploying
 
-### 云端 Coze
-- API: 需配置 API Key
-- 用途: 深度逻辑分析
-- 特性: 支持联网搜索、多步推理
+Example deployment files are provided in `deploy/`:
 
-## 📝 API 接口
+- **Nginx**: `deploy/nginx_iprs_site.conf` -- reverse proxy configuration
+- **Systemd**: `deploy/systemd/` -- service unit files for backend and frontend
+- **Supervisor**: `deploy/supervisor_iprs_backend.conf`
+- **Shell scripts**: `deploy/nohup/` -- start/stop/status scripts
 
-### 认证接口
-- POST /api/auth/login - 用户登录
-- POST /api/auth/register - 用户注册
+Typical production setup:
 
-### 文档管理
-- GET /api/documents - 获取文档列表
-- POST /api/documents/upload - 上传文档
-- GET /api/documents/{id} - 获取文档详情
+```
+Nginx :80 → Frontend (static files)
+Nginx /api → Uvicorn :8000 (backend)
+```
 
-### 审核接口
-- POST /api/review/formal - 形式审查
-- GET /api/review/deep/stream - 深度分析 (流式)
+## Contributing
 
-## 🔒 测试账号
+Contributions are welcome. Please open an issue to discuss proposed changes before submitting a pull request.
 
-- 管理员: admin / (见 .env 配置)
-- 普通用户: lizhuanyuan / (见 .env 配置)
+## License
 
-## 📋 开发计划
+MIT License
 
-- [x] 项目环境搭建
-- [x] 数据库设计与创建
-- [x] FastAPI 基础框架
-- [x] SQLAlchemy 模型
-- [ ] 用户认证 API
-- [ ] 文档上传与解析
-- [ ] AI 适配器
-- [ ] 前端界面
-- [ ] 流式 AI 响应
-- [ ] 报告导出
-
-## 🐛 问题排查
-
-### 数据库连接问题
-1. 检查 MySQL 服务是否启动
-2. 确认用户名密码正确
-3. 验证数据库是否已创建
-
-### AI 服务问题
-1. Ollama 服务是否启动: `ollama list`
-2. Coze API Key 是否有效
-3. 网络连接是否正常
-
-## 📞 支持
-
-如有问题请参考项目文档或联系开发团队。
+Copyright (c) 2025 IPRS Contributors
