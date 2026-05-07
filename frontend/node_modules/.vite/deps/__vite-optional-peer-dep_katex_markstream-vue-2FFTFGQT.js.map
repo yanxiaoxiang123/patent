@@ -1,7 +1,0 @@
-{
-  "version": 3,
-  "sources": ["optional-peer-dep:__vite-optional-peer-dep:katex:markstream-vue"],
-  "sourcesContent": ["throw new Error(`Could not resolve \"katex\" imported by \"markstream-vue\". Is it installed?`)"],
-  "mappings": ";AAAA,MAAM,IAAI,MAAM,0EAA0E;",
-  "names": []
-}

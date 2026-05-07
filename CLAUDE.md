@@ -51,7 +51,7 @@ npm run lint
 
 ### Database
 ```bash
-mysql -u root -p123123 -D iprs
+mysql -u root -p -D iprs
 # Tables auto-create on FastAPI startup via SQLAlchemy models
 ```
 

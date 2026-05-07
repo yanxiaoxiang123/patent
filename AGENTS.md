@@ -44,7 +44,7 @@ python -m uvicorn app.main:app --host 0.0.0.0 --port 8000 --workers 2
 #### 数据库
 ```bash
 # 连接 MySQL
-mysql -u root -p123123 -D iprs
+mysql -u root -p -D iprs
 
 # 数据库迁移（当前项目使用 SQLAlchemy 自动创建表）
 # 推荐使用 Alembic 进行版本控制:
