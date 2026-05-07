@@ -54,8 +54,8 @@ async def amain(args: argparse.Namespace) -> None:
 
 def main() -> None:
     parser = argparse.ArgumentParser()
-    parser.add_argument("--yan-password", default="123123")
-    parser.add_argument("--admin-password", default="admin123")
+    parser.add_argument("--yan-password", required=True, help="Password for 'yan' user")
+    parser.add_argument("--admin-password", required=True, help="Password for 'admin' user")
     args = parser.parse_args()
     asyncio.run(amain(args))
 

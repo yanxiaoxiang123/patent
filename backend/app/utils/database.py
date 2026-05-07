@@ -8,7 +8,9 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-DATABASE_URL = os.getenv("DATABASE_URL", "mysql+aiomysql://root:123123@localhost:3306/iprs")
+DATABASE_URL = os.getenv("DATABASE_URL")
+if not DATABASE_URL:
+    raise ValueError("环境变量 DATABASE_URL 必须设置！请在 .env 文件中添加: DATABASE_URL=mysql+aiomysql://user:password@host:port/dbname")
 
 # 创建异步引擎
 engine = create_async_engine(

@@ -9,15 +9,17 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-# 数据库配置
 DB_CONFIG = {
-    'host': 'localhost',
-    'port': 3306,
-    'user': 'root',
-    'password': '123123',
-    'db': 'iprs',
+    'host': os.getenv('DB_HOST', 'localhost'),
+    'port': int(os.getenv('DB_PORT', '3306')),
+    'user': os.getenv('DB_USER'),
+    'password': os.getenv('DB_PASSWORD'),
+    'db': os.getenv('DB_NAME', 'iprs'),
     'autocommit': True
 }
+
+if not DB_CONFIG['user'] or not DB_CONFIG['password']:
+    raise RuntimeError("请设置环境变量 DB_USER 和 DB_PASSWORD")
 
 async def create_test_users():
     """创建测试用户"""
@@ -45,18 +47,22 @@ async def create_test_users():
             print("\n✅ 测试用户已存在，无需创建")
             return True
 
+        import hashlib
+        admin_password = os.getenv("ADMIN_PASSWORD", "admin123")
+        user_password = os.getenv("USER_PASSWORD", "123456")
+
         # 创建管理员用户
         await cursor.execute("""
             INSERT INTO users (username, password_hash, role, email, full_name)
             VALUES (%s, %s, %s, %s, %s)
-        """, ("admin", "admin123", "admin", "admin@example.com", "系统管理员"))
+        """, ("admin", hashlib.sha256(admin_password.encode()).hexdigest(), "admin", "admin@example.com", "系统管理员"))
         print("✅ 创建管理员用户: admin")
 
         # 创建普通用户
         await cursor.execute("""
             INSERT INTO users (username, password_hash, role, email, full_name)
             VALUES (%s, %s, %s, %s, %s)
-        """, ("lizhuanyuan", "123456", "agent", "li@example.com", "李专员"))
+        """, ("lizhuanyuan", hashlib.sha256(user_password.encode()).hexdigest(), "agent", "li@example.com", "李专员"))
         print("✅ 创建普通用户: lizhuanyuan")
 
         # 验证创建结果
@@ -85,8 +91,8 @@ async def main():
     if success:
         print("\n✅ 测试用户创建完成")
         print("\n🔑 测试账号信息:")
-        print("  管理员: admin / admin123")
-        print("  普通用户: lizhuanyuan / 123456")
+        print("  管理员: admin / (密码已哈希存储)")
+        print("  普通用户: lizhuanyuan / (密码已哈希存储)")
         print("\n💡 提示: 现在可以重启后端服务并测试登录功能")
     else:
         print("\n❌ 测试用户创建失败，请检查数据库连接")

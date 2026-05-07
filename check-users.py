@@ -79,12 +79,12 @@ async def create_test_users():
     print("🔧 创建测试用户...")
 
     try:
-        from backend.app.models.user import create_user
+        from backend.app.utils.passwords import hash_password
 
         # 创建管理员用户
         admin_user = await create_user(
             username="admin",
-            password_hash="admin123",  # 临时使用明文密码
+            password_hash=hash_password(os.getenv("ADMIN_PASSWORD", "admin123")),
             email="admin@example.com",
             full_name="系统管理员",
             role="admin"
@@ -94,7 +94,7 @@ async def create_test_users():
         # 创建普通用户
         normal_user = await create_user(
             username="lizhuanyuan",
-            password_hash="123456",  # 临时使用明文密码
+            password_hash=hash_password(os.getenv("USER_PASSWORD", "123456")),
             email="li@example.com",
             full_name="李专员",
             role="user"

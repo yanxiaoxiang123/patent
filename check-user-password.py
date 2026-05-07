@@ -3,18 +3,26 @@
 检查用户密码
 """
 import asyncio
+import os
+from dotenv import load_dotenv
 import aiomysql
+
+load_dotenv()
 
 async def check_user_passwords():
     """检查用户密码"""
     DB_CONFIG = {
-        'host': 'localhost',
-        'port': 3306,
-        'user': 'root',
-        'password': '123123',
-        'db': 'iprs',
+        'host': os.getenv('DB_HOST', 'localhost'),
+        'port': int(os.getenv('DB_PORT', '3306')),
+        'user': os.getenv('DB_USER'),
+        'password': os.getenv('DB_PASSWORD'),
+        'db': os.getenv('DB_NAME', 'iprs'),
         'autocommit': True
     }
+
+    if not DB_CONFIG['user'] or not DB_CONFIG['password']:
+        print("❌ 请设置环境变量 DB_USER 和 DB_PASSWORD")
+        return
 
     try:
         conn = await aiomysql.connect(**DB_CONFIG)

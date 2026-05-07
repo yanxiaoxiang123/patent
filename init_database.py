@@ -1,14 +1,24 @@
 import pymysql
 import hashlib
 import sys
+import os
 
 def create_database():
+    db_host = os.getenv("DB_HOST", "localhost")
+    db_user = os.getenv("DB_USER")
+    db_password = os.getenv("DB_PASSWORD")
+
+    if not db_user or not db_password:
+        print("❌ 请设置环境变量 DB_USER 和 DB_PASSWORD")
+        print("示例: set DB_USER=root && set DB_PASSWORD=yourpassword")
+        sys.exit(1)
+
     try:
         # 先连接到 MySQL 服务器（不指定数据库）
         connection = pymysql.connect(
-            host='localhost',
-            user='root',
-            password='123123',
+            host=db_host,
+            user=db_user,
+            password=db_password,
             charset='utf8mb4'
         )
 
@@ -108,9 +118,11 @@ def create_database():
             print("✅ 聊天消息表创建成功")
 
             # 插入测试数据
-            # 简单密码哈希（生产环境应使用 bcrypt）
-            admin_password_hash = hashlib.sha256("admin123".encode()).hexdigest()
-            user_password_hash = hashlib.sha256("123456".encode()).hexdigest()
+            # 密码从环境变量读取，SHA256 哈希
+            admin_password_raw = os.getenv("ADMIN_PASSWORD", "admin123")
+            user_password_raw = os.getenv("USER_PASSWORD", "123456")
+            admin_password_hash = hashlib.sha256(admin_password_raw.encode()).hexdigest()
+            user_password_hash = hashlib.sha256(user_password_raw.encode()).hexdigest()
 
             cursor.execute("SELECT COUNT(*) FROM users WHERE username = 'admin'")
             admin_exists = cursor.fetchone()[0]
@@ -141,7 +153,7 @@ def create_database():
         print(f"❌ 数据库错误: {e}")
         print("\n请检查：")
         print("1. MySQL 服务是否启动")
-        print("2. 用户名密码是否正确 (root/123456)")
+        print("2. 环境变量 DB_USER 和 DB_PASSWORD 是否正确")
         print("3. MySQL 是否允许远程连接")
         sys.exit(1)
     except Exception as e:

@@ -2,6 +2,7 @@ import pymysql
 import subprocess
 import sys
 import socket
+import os
 
 def check_mysql_port():
     """检查 MySQL 端口是否开放"""
@@ -46,6 +47,11 @@ def test_different_connections():
     """测试不同的连接配置"""
     print("\n🔗 测试不同连接配置...")
 
+    db_password = os.getenv("DB_PASSWORD")
+    if not db_password:
+        print("❌ 请设置环境变量 DB_PASSWORD")
+        return None
+
     configs = [
         {'host': 'localhost', 'port': 3306},
         {'host': '127.0.0.1', 'port': 3306},
@@ -59,7 +65,7 @@ def test_different_connections():
             connection = pymysql.connect(
                 host=config['host'],
                 user='root',
-                password='123456',
+                password=db_password,
                 port=config['port'],
                 charset='utf8mb4',
                 connect_timeout=3
@@ -89,7 +95,7 @@ def create_database_with_config(config):
             host=config['host'],
             port=config['port'],
             user='root',
-            password='123456',
+            password=db_password,
             charset='utf8mb4'
         )
 
@@ -112,10 +118,12 @@ def create_database_with_config(config):
             """)
             print("✅ 用户表创建成功")
 
-            # 插入测试用户（使用简单哈希）
+            # 插入测试用户（密码从环境变量读取）
             import hashlib
-            admin_hash = hashlib.sha256("admin123".encode()).hexdigest()
-            user_hash = hashlib.sha256("123456".encode()).hexdigest()
+            admin_password = os.getenv("ADMIN_PASSWORD", "admin123")
+            user_password = os.getenv("USER_PASSWORD", "123456")
+            admin_hash = hashlib.sha256(admin_password.encode()).hexdigest()
+            user_hash = hashlib.sha256(user_password.encode()).hexdigest()
 
             cursor.execute("SELECT COUNT(*) FROM users WHERE username='admin'")
             if cursor.fetchone()[0] == 0:
@@ -158,13 +166,6 @@ def main():
         if create_database_with_config(working_config):
             print(f"\n✅ 数据库创建成功！")
             print(f"请保存配置信息: {working_config}")
-
-            # 创建配置文件
-            with open('database_config.txt', 'w') as f:
-                f.write(f"DATABASE_CONFIG = {working_config}\n")
-                f.write("USERNAME = root\n")
-                f.write("PASSWORD = 123456\n")
-            print("📝 配置已保存到 database_config.txt")
         else:
             print("\n❌ 数据库创建失败")
     else:

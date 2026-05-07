@@ -65,14 +65,14 @@ pip install -r requirements.txt
 
 ### 3. 配置数据库
 - 确保 MySQL 服务已启动
-- 用户名: root, 密码: 123123
+- 用户名: your-db-user, 密码: your-db-password
 - 执行 `python ../init_database.py` 初始化数据库
 
 ### 4. 配置环境变量
 编辑 `backend/.env` 文件：
 ```
-DATABASE_URL=mysql+aiomysql://root:123123@localhost:3306/iprs
-SECRET_KEY=your-secret-key-here
+DATABASE_URL=mysql+aiomysql://user:password@localhost:3306/iprs
+TOKEN_SECRET=your-secure-secret-key
 COZE_API_KEY=your-coze-api-key-here
 ```
 
@@ -142,8 +142,8 @@ python run.py
 
 ## 🔒 测试账号
 
-- 管理员: admin / admin123
-- 普通用户: lizhuanyuan / 123456
+- 管理员: admin / (见 .env 配置)
+- 普通用户: lizhuanyuan / (见 .env 配置)
 
 ## 📋 开发计划
 
