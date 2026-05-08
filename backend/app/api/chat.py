@@ -334,9 +334,10 @@ async def chat_completion(chat_request: ChatRequest, request: Request):
             )
         return await handle_passthrough_chat(chat_request, user_id, strict_system_prompt)
 
-    # 专利相关性检查
+    # 专利相关性检查 — 已有文档上下文或会话时跳过
+    has_context = chat_request.document_id or chat_request.session_id
     user_message = next((m for m in chat_request.messages if m.get("role") == "user"), {}).get("content", "")
-    if not validate_patent_relevance(user_message):
+    if not has_context and not validate_patent_relevance(user_message):
         return EventSourceResponse(create_patent_error_stream(), headers=SSE_HEADERS)
 
     # 普通聊天

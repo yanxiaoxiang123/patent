@@ -30,7 +30,7 @@ export default defineConfig({
     host: true,
     proxy: {
       '/api/ai': {
-        target: 'http://127.0.0.1:8006',
+        target: 'http://127.0.0.1:8000',
         changeOrigin: true,
         secure: false,
         configure: (proxy, options) => {
@@ -38,17 +38,17 @@ export default defineConfig({
         }
       },
       '/api/documents': {
-        target: 'http://127.0.0.1:8006',
+        target: 'http://127.0.0.1:8000',
         changeOrigin: true,
         secure: false
       },
       '/api/admin': {
-        target: 'http://127.0.0.1:8006',
+        target: 'http://127.0.0.1:8000',
         changeOrigin: true,
         secure: false
       },
       '/api/auth': {
-        target: 'http://127.0.0.1:8006',
+        target: 'http://127.0.0.1:8000',
         changeOrigin: true,
         secure: false
       }

@@ -7,6 +7,7 @@ export {}
 
 declare module 'vue' {
   export interface GlobalComponents {
+    ChatSender: typeof import('./src/components/chat/ChatSender.vue')['default']
     ChatSessionItem: typeof import('./src/components/chat/ChatSessionItem.vue')['default']
     ChatTopBar: typeof import('./src/components/chat/ChatTopBar.vue')['default']
     ContentPreviewDialog: typeof import('./src/components/common/ContentPreviewDialog.vue')['default']
@@ -36,12 +37,17 @@ declare module 'vue' {
     MessageBubble: typeof import('./src/components/message-bubble/index.vue')['default']
     MessageContent: typeof import('./src/components/message-bubble/MessageContent.vue')['default']
     MessageHeader: typeof import('./src/components/message-bubble/MessageHeader.vue')['default']
+    MessageList: typeof import('./src/components/chat/MessageList.vue')['default']
     MessageThinking: typeof import('./src/components/message-bubble/MessageThinking.vue')['default']
+    RenameDialog: typeof import('./src/components/chat/RenameDialog.vue')['default']
     RouterLink: typeof import('vue-router')['RouterLink']
     RouterView: typeof import('vue-router')['RouterView']
+    SessionSidebar: typeof import('./src/components/chat/SessionSidebar.vue')['default']
+    SettingsDialog: typeof import('./src/components/chat/SettingsDialog.vue')['default']
     SkeletonLoader: typeof import('./src/components/common/SkeletonLoader.vue')['default']
     ThinkingPanel: typeof import('./src/components/chat/ThinkingPanel.vue')['default']
     VirtualMessageList: typeof import('./src/components/common/VirtualMessageList.vue')['default']
+    WelcomePlaceholder: typeof import('./src/components/chat/WelcomePlaceholder.vue')['default']
   }
   export interface ComponentCustomProperties {
     vLoading: typeof import('element-plus/es')['ElLoadingDirective']
