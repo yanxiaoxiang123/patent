@@ -29,6 +29,7 @@ __pycache__/
 *.so
 .Python
 venv/
+.venv_win/
 ENV/
 .pytest_cache/
 
