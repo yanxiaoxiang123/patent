@@ -175,19 +175,28 @@ export interface UserMessage extends ChatMessageBase {
   fullContent?: string;
   attachments?: FileAttachment[];
   templateId?: number;
+  thinking?: string;
+  thinkingExpanded?: boolean;
 }
 
 export interface AIMessage extends ChatMessageBase {
   role: "ai" | "assistant";
   thinking?: string;
   thinkingExpanded?: boolean;
+  attachments?: FileAttachment[];
 }
 
 export interface StreamingMessage {
   isStreaming: true;
+  id?: string;
+  role?: "ai" | "assistant";
+  content: string;
   thinkingContent?: string;
   answerContent?: string;
-  content: string;
+  timestamp?: Date;
+  thinking?: string;
+  thinkingExpanded?: boolean;
+  attachments?: FileAttachment[];
 }
 
 export type ChatMessage = UserMessage | AIMessage | StreamingMessage;
