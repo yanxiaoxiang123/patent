@@ -15,7 +15,7 @@ export const useAuthStore = defineStore("auth", () => {
   // 登录
   const login = async (form: LoginForm) => {
     const response = await loginApi(form);
-    const { access_token, user: userData } = response;
+    const { access_token, user: userData } = response.data ?? response;
 
     token.value = access_token;
     user.value = userData;
