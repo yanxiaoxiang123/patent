@@ -31,13 +31,13 @@ export function useFileUpload() {
       "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
       "application/pdf",
     ].includes(file.type);
-    const isLt20M = file.size / 1024 / 1024 < 20;
+    const isLt20MB = file.size / 1024 / 1024 < 20;
 
     if (!isValidType) {
       ElMessage.error("只能上传 .doc/.docx/.pdf 格式的文件!");
       return false;
     }
-    if (!isLt20M) {
+    if (!isLt20MB) {
       ElMessage.error("文件大小不能超过 20MB!");
       return false;
     }
@@ -240,7 +240,14 @@ export function useFileUpload() {
     try {
       const stored = localStorage.getItem(UPLOADED_FILES_STORAGE_KEY);
       if (stored) {
-        const parsed = JSON.parse(stored);
+        let parsed;
+        try {
+          parsed = JSON.parse(stored);
+        } catch (parseErr) {
+          console.warn("解析上传文件缓存失败，已清除:", parseErr);
+          localStorage.removeItem(UPLOADED_FILES_STORAGE_KEY);
+          return;
+        }
         if (Array.isArray(parsed)) {
           uploadedFiles.value = parsed.map((item) => ({
             id: item.id,

@@ -78,8 +78,7 @@ const handleSubmit = () => {
         username: form.username,
         password: form.password,
       });
-      // 使用 location.href 强制页面跳转，确保路由守卫正确检测到登录状态
-      window.location.href = "/chat";
+      router.push("/chat");
     } catch (error) {
       ElMessage.error("用户名或密码错误");
     } finally {

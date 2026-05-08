@@ -193,14 +193,14 @@ export function useChatSession() {
    */
   const renameSession = async (sessionId: number, newTitle: string) => {
     try {
-      await api.patch(`/ai/sessions/${sessionId}`, { title: newTitle });
+      const result = await api.patch(`/ai/sessions/${sessionId}`, { title: newTitle });
 
-      // Update local state
+      // 直接使用后端返回值更新本地状态
       const index = sessions.value.findIndex((s) => s.id === sessionId);
       if (index !== -1) {
         sessions.value[index] = {
           ...sessions.value[index],
-          title: newTitle,
+          title: result?.title || newTitle,
           updatedAt: Date.now(),
         };
       }

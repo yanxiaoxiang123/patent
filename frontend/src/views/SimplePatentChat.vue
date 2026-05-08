@@ -254,6 +254,15 @@
           </template>
         </el-dialog>
 
+        <!-- 重命名会话对话框 -->
+        <el-dialog v-model="showRenameDialog" title="重命名会话" width="400px" @keyup.enter="confirmRename">
+          <el-input v-model="renameDialogTitle" placeholder="请输入新的会话标题" />
+          <template #footer>
+            <el-button @click="showRenameDialog = false">取消</el-button>
+            <el-button type="primary" @click="confirmRename" :disabled="!renameDialogTitle.trim()">确定</el-button>
+          </template>
+        </el-dialog>
+
         <!-- 预览对话框 -->
         <ContentPreviewDialog
           v-model="previewDialogVisible"
@@ -358,6 +367,9 @@ const inputMessage = ref("");
 const currentResponse = ref("");
 const attachmentsOpen = ref(false);
 const showSettings = ref(false);
+const showRenameDialog = ref(false);
+const renameDialogTitle = ref("");
+const renameDialogSessionKey = ref<string | null>(null);
 const previewDialogVisible = ref(false);
 const previewTitle = ref("");
 const previewContent = ref("");
@@ -371,14 +383,14 @@ const settings = reactive({
   model: localStorage.getItem(AI_MODEL_STORAGE_KEY) || "qwen3:8b",
 });
 
-// Watchers
+// Watchers — 用 messages.length 浅监听替代 deep:true，避免大量消息时深度遍历
 watch(
-  messages,
+  () => messages.value.length,
   () => {
     nextTick(() => scrollToBottom());
   },
-  { deep: true },
 );
+// 流式响应时也触发滚动
 watch(currentResponse, () => {
   nextTick(() => scrollToBottom());
 });
@@ -451,10 +463,9 @@ const conversationMenu = (conversation) => ({
         (s) => String(s.id) === conversation.key,
       );
       if (session) {
-        const newTitle = prompt("请输入新的会话标题:", session.title);
-        if (newTitle && newTitle.trim() && newTitle.trim() !== session.title) {
-          renameSession(Number(conversation.key), newTitle.trim());
-        }
+        renameDialogSessionKey.value = conversation.key;
+        renameDialogTitle.value = session.title || "新对话";
+        showRenameDialog.value = true;
       }
     }
   },
@@ -570,7 +581,6 @@ const generateAIResponse = async (message, attachments, options = {}) => {
       messages: strict
         ? [...contextMessages, { role: "user", content: userMessage }]
         : [
-            { role: "system", content: "你是一个专业的专利审核助手" },
             ...contextMessages,
             { role: "user", content: userMessage },
           ],
@@ -688,6 +698,13 @@ const handlePreview = (file) => {
   previewTitle.value = file.name;
   previewDialogVisible.value = true;
 };
+const confirmRename = async () => {
+  if (renameDialogSessionKey.value && renameDialogTitle.value.trim()) {
+    await renameSession(Number(renameDialogSessionKey.value), renameDialogTitle.value.trim());
+  }
+  showRenameDialog.value = false;
+};
+
 const regenerateResponse = async (index) => {
   const prev = messages.value[index - 1];
   if (typeof (prev?.fullContent || prev?.content) === "string") {

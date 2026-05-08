@@ -205,6 +205,16 @@ Nginx /api → Uvicorn :8000 (backend)
 - **Database Pool**: `pool_size` 5→10, `pool_timeout` 30s added; Redis `max_connections`=10
 - **Dead Code**: Removed `ai_adapter.py`, duplicate `format_rules_as_prompt` (~230 lines), unused frontend components (~2,500 lines)
 - **Error Visibility**: `logger.exception()` replaces flat `logger.error()` for chat persistence failures, including full stack traces
+- **Multi-URL Ollama**: Configurable `OLLAMA_URLS` for failover; removed localhost fallback to avoid wasted retries
+
+## Recent Fixes
+
+- **Login Redirect**: `window.location.href` → `router.push('/chat')` for proper SPA routing
+- **Hardcoded System Prompt**: Removed from frontend, unified in backend `PATENT_SYSTEM_PROMPTS`
+- **Session Rename UI**: Native `prompt()` replaced with Element Plus Dialog + Input
+- **Watch Performance**: `watch(messages, {deep:true})` → `watch(() => messages.length)` to avoid deep traversal
+- **JSON Parse Safety**: Dedicated try-catch for localStorage parsing with auto-cleanup on corruption
+- **File Upload**: Variable naming `isLt20M` → `isLt20MB`; `hasattr` → `getattr` for file.size
 
 ## Test Accounts
 
