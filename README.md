@@ -137,10 +137,14 @@ Copy `backend/.env.example` to `backend/.env` and configure:
 | `TOKEN_SECRET` | Secret key for JWT token signing | Yes |
 | `DB_HOST` / `DB_PORT` / `DB_USER` / `DB_PASSWORD` / `DB_NAME` | Database connection | Yes |
 | `OLLAMA_URL` | Ollama server URL | No (default: `http://localhost:11434`) |
+| `OLLAMA_URL` | Ollama server URL | No (default: `http://localhost:11434`) |
+| `OLLAMA_URLS` | Ollama server URLs (comma-separated) | No |
 | `OLLAMA_MODEL` | Model name | No (default: `qwen3:8b`) |
+| `OLLAMA_KEEP_ALIVE` | Model keep-alive duration | No (default: `5m`) |
 | `REDIS_HOST` / `REDIS_PORT` | Redis for rate limiting | Optional |
 | `CORS_ORIGINS` | Allowed CORS origins (JSON array) | No |
 | `RATE_LIMIT_MAX` | Requests per minute | No (default: 100) |
+| `DATABASE_URL` | Database connection string | Yes (if DB_* not set) |
 
 ## API Overview
 
