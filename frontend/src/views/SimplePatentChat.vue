@@ -2,7 +2,11 @@
   <div class="patent-chat">
     <!-- 侧边栏背景遮罩 -->
     <Transition name="fade">
-      <div v-if="showSidebar" class="sidebar-backdrop" @click="showSidebar = false" />
+      <div
+        v-if="showSidebar"
+        class="sidebar-backdrop"
+        @click="showSidebar = false"
+      />
     </Transition>
 
     <!-- 聊天记录侧边栏 -->
@@ -68,10 +72,7 @@
         <div class="page-disclaimer">内容由 AI 生成，请仔细甄别</div>
 
         <!-- 设置对话框 -->
-        <SettingsDialog
-          v-model="showSettings"
-          :settings="settings"
-        />
+        <SettingsDialog v-model="showSettings" :settings="settings" />
 
         <!-- 重命名会话对话框 -->
         <RenameDialog
@@ -120,11 +121,8 @@ const isAdmin = computed(() => authStore.isAdmin);
 const messageListRef = ref<InstanceType<typeof MessageList> | null>(null);
 
 // Composables
-const {
-  toggleThinking,
-  streamingThinkingExpanded,
-  toggleStreamingThinking,
-} = useThinking();
+const { toggleThinking, streamingThinkingExpanded, toggleStreamingThinking } =
+  useThinking();
 
 const {
   sessions: chatSessions,

@@ -1,4 +1,4 @@
-import { ref, watch, type Ref, type ComputedRef } from "vue";
+import { ref, watch, type Ref, type ComputedRef, nextTick } from "vue";
 
 interface UseAutoResizeTextareaOptions {
   /** 最大高度（像素） */
@@ -110,7 +110,7 @@ export function useTextareaInput(
     if (!items) return;
 
     const files: File[] = [];
-    for (const item of items) {
+    for (const item of Array.from(items)) {
       if (item.type.startsWith("image/") || item.type.includes("document")) {
         const file = item.getAsFile();
         if (file) files.push(file);

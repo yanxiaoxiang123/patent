@@ -46,7 +46,7 @@ vi.stubGlobal(
 );
 
 // Mock fetch
-global.fetch = vi.fn().mockResolvedValue({
+globalThis.fetch = vi.fn().mockResolvedValue({
   ok: true,
   status: 200,
   body: null,

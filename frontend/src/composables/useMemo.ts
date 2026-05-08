@@ -160,7 +160,7 @@ export function useMemoizedSearch<T>(
   options: { maxCacheSize?: number } = {},
 ) {
   const { maxCacheSize = 100 } = options;
-  const cache = ref<Map<string, T[]>>(new Map());
+  const cache = shallowRef<Map<string, T[]>>(new Map());
 
   const search = (query: string): T[] => {
     if (!query.trim()) {
@@ -178,7 +178,7 @@ export function useMemoizedSearch<T>(
     // 更新缓存
     if (cache.value.size >= maxCacheSize) {
       // 删除最旧的缓存项
-      const firstKey = cache.value.keys().next().value;
+      const firstKey = cache.value.keys().next().value as string;
       cache.value.delete(firstKey);
     }
     cache.value.set(query, results);

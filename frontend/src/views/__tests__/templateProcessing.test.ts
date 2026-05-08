@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, afterEach } from "vitest";
+import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import {
   isStrictTemplate,
   isIPCTemplate,
@@ -134,7 +134,7 @@ describe("Template Processing Logic", () => {
   });
 
   describe("getMessageContent", () => {
-    describe("strict templates (1, 2, 3, 5)", () => {
+    describe("strict templates (1, 2, 3)", () => {
       it("should return empty string when no text for template 1", () => {
         const content = getMessageContent(1, false);
         expect(content).toBe("");
@@ -147,11 +147,6 @@ describe("Template Processing Logic", () => {
 
       it("should return empty string when no text for template 3", () => {
         const content = getMessageContent(3, false);
-        expect(content).toBe("");
-      });
-
-      it("should return empty string when no text for template 5", () => {
-        const content = getMessageContent(5, false);
         expect(content).toBe("");
       });
 

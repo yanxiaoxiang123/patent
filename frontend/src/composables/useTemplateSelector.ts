@@ -49,10 +49,13 @@ export function useTemplateSelector() {
       key: String(t.id),
       label: t.title,
       description: t.description || "",
-    }))
+    })),
   );
 
-  const placeholderPromptsStyles = { list: { width: "100%" }, item: { flex: 1 } };
+  const placeholderPromptsStyles = {
+    list: { width: "100%" },
+    item: { flex: 1 },
+  };
 
   function getTemplateById(id: number | string): TemplateInfo | undefined {
     return templates.value.find((t) => String(t.id) === String(id));
@@ -72,7 +75,7 @@ export function useTemplateSelector() {
   function buildMessageContent(
     templateId: number | null,
     hasText: boolean,
-    userText?: string
+    userText?: string,
   ): string {
     if (hasText) return userText || "";
 
@@ -94,7 +97,7 @@ export function useTemplateSelector() {
     templateId: number | null,
     hasText: boolean,
     hasAttachments: boolean,
-    messageContent: string
+    messageContent: string,
   ): string {
     const isPureAttachment = !hasText && hasAttachments;
     const isStrict = isStrictTemplate(templateId);

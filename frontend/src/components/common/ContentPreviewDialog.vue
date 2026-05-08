@@ -59,7 +59,7 @@ defineExpose({});
 .preview-content pre {
   white-space: pre-wrap;
   word-wrap: break-word;
-  font-family: 'JetBrains Mono', 'Fira Code', 'Courier New', monospace;
+  font-family: "JetBrains Mono", "Fira Code", "Courier New", monospace;
   font-size: 13px;
   line-height: 1.7;
   color: var(--text-primary);

@@ -38,7 +38,8 @@ api.interceptors.response.use(
     const { response } = error;
 
     if (response) {
-      const { status, data } = response;
+      const { status } = response;
+      const data = response.data as { message?: string; detail?: string };
 
       switch (status) {
         case 401: {

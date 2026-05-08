@@ -59,7 +59,7 @@ const elementIcons = [
   Paperclip,
 ];
 elementIcons.forEach((comp) => {
-  app.component(comp.name, comp);
+  if (comp.name) app.component(comp.name, comp);
 });
 
 app.use(createPinia());

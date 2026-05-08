@@ -6,9 +6,8 @@ import {
   uploadDocument,
   parseDocument,
   deleteDocument,
-  type DocumentListParams,
-  type DocumentItem,
 } from "@/services/documents";
+import type { DocumentListParams, DocumentItem } from "@/types";
 
 export const useDocumentsStore = defineStore("documents", () => {
   const documents = ref<DocumentItem[]>([]);

@@ -43,12 +43,12 @@
               gap="2"
               class="ax-attachments-inline"
             >
-              <Typography.Text style="font-size: 30px; line: 1">
+              <Typography.Text style="font-size: 30px; line-height: 1">
                 <CloudUploadOutlined />
               </Typography.Text>
               <Typography.Title
                 :level="5"
-                style="margin: 0; font-size: 14px; line: 1.5"
+                style="margin: 0; font-size: 14px; line-height: 1.5"
               >
                 上传文档
               </Typography.Title>
@@ -69,11 +69,9 @@
 <script setup lang="ts">
 import { ref, computed, h } from "vue";
 import { Badge, Button, Flex, Typography } from "ant-design-vue";
-import {
-  CloudUploadOutlined,
-  PaperClipOutlined,
-} from "@ant-design/icons-vue";
+import { CloudUploadOutlined, PaperClipOutlined } from "@ant-design/icons-vue";
 import { Attachments, Sender } from "ant-design-x-vue";
+import { ElMessage } from "element-plus";
 import type { FileAttachment } from "@/types";
 
 interface Props {
@@ -105,11 +103,11 @@ function beforeUpload(file: File) {
   ].includes(file.type);
   const isLt20MB = file.size / 1024 / 1024 < 20;
   if (!isValidType) {
-    console.error("只能上传 .doc/.docx/.pdf 格式的文件!");
+    ElMessage.error("只能上传 .doc/.docx/.pdf 格式的文件!");
     return false;
   }
   if (!isLt20MB) {
-    console.error("文件大小不能超过 20MB!");
+    ElMessage.error("文件大小不能超过 20MB!");
     return false;
   }
   return true;
@@ -130,7 +128,7 @@ function onChange(info: any) {
 
 function renderActions(
   _ori: unknown,
-  { components }: { components: { LoadingButton: unknown; SendButton: unknown } },
+  { components }: { components: { LoadingButton: any; SendButton: any } },
 ) {
   return h(components.SendButton, { disabled: props.loading });
 }
@@ -147,7 +145,9 @@ function renderActions(
   border: 1px solid var(--border-color);
   flex-shrink: 0;
   margin-bottom: 10px;
-  transition: box-shadow 0.2s ease, border-color 0.2s ease;
+  transition:
+    box-shadow 0.2s ease,
+    border-color 0.2s ease;
 }
 
 .ax-sender:focus-within {

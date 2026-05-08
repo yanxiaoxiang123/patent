@@ -81,7 +81,7 @@ export function useFileUpload() {
         ],
       };
 
-      uploadedFiles.value.push(fileItem);
+      uploadedFiles.value = [...uploadedFiles.value, fileItem];
 
       attachmentItems.value = attachmentItems.value.map((item) => {
         if (String(item.uid) !== String(uid)) return item;
@@ -129,13 +129,17 @@ export function useFileUpload() {
           (f) => f.id === fileItem.id,
         );
         if (index !== -1) {
-          uploadedFiles.value[index] = {
-            ...uploadedFiles.value[index],
-            parsed: !!fileItem.parsed,
-            parsedContent: fileItem.parsedContent,
-            error: !!fileItem.error,
-            parsingThinkingSteps: fileItem.parsingThinkingSteps,
-          };
+          uploadedFiles.value = uploadedFiles.value.map((f, i) =>
+            i === index
+              ? {
+                  ...f,
+                  parsed: !!fileItem.parsed,
+                  parsedContent: fileItem.parsedContent,
+                  error: !!fileItem.error,
+                  parsingThinkingSteps: fileItem.parsingThinkingSteps,
+                }
+              : f,
+          );
         }
 
         attachmentItems.value = attachmentItems.value.map((item) => {
@@ -193,7 +197,10 @@ export function useFileUpload() {
       (f) => String(f.id) === String(uid) || String(f.uid) === String(uid),
     );
     if (index !== -1) {
-      uploadedFiles.value.splice(index, 1);
+      uploadedFiles.value = [
+        ...uploadedFiles.value.slice(0, index),
+        ...uploadedFiles.value.slice(index + 1),
+      ];
     }
 
     return true;
@@ -204,7 +211,7 @@ export function useFileUpload() {
    */
   const handleAttachmentsChange = (info: any) => {
     const list = Array.isArray(info?.fileList) ? info.fileList : [];
-    attachmentItems.value = list.map((item) => {
+    attachmentItems.value = list.map((item: any) => {
       const matched = uploadedFiles.value.find(
         (f) =>
           String(f.id) === String(item.docId) ||

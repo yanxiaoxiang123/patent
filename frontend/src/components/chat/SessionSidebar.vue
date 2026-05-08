@@ -2,7 +2,12 @@
   <div class="session-sidebar ax-menu">
     <div class="sidebar-header">
       <div class="sidebar-title">聊天记录</div>
-      <Button type="text" size="small" class="sidebar-close-btn" @click="emit('close')">
+      <Button
+        type="text"
+        size="small"
+        class="sidebar-close-btn"
+        @click="emit('close')"
+      >
         <template #icon>
           <CloseOutlined />
         </template>
@@ -37,19 +42,19 @@ import { Files } from "@element-plus/icons-vue";
 import { Button } from "ant-design-vue";
 import { CloseOutlined, PlusOutlined } from "@ant-design/icons-vue";
 import { Conversations } from "ant-design-x-vue";
+import type { Conversation } from "ant-design-x-vue";
 
-interface ConversationItem {
-  key: string;
-  label: string;
-  timestamp?: number;
-}
+type MenuClickEventHandler = (info: {
+  key: string | number;
+  domEvent: MouseEvent | KeyboardEvent;
+}) => void;
 
 interface Props {
-  items: ConversationItem[];
+  items: Conversation[];
   activeKey?: string;
-  menu: (conversation: ConversationItem) => {
+  menu: (conversation: Conversation) => {
     items: { key: string; label: string }[];
-    onClick: (payload: { key: string; domEvent: Event }) => void;
+    onClick: MenuClickEventHandler;
   };
 }
 
@@ -167,7 +172,8 @@ function onActiveChange(key: string) {
   white-space: nowrap;
 }
 
-.ax-conversations :deep(.ax-conversations-item.active .ax-conversations-item-title) {
+.ax-conversations
+  :deep(.ax-conversations-item.active .ax-conversations-item-title) {
   color: var(--primary-color);
   font-weight: 600;
 }
@@ -178,7 +184,8 @@ function onActiveChange(key: string) {
   margin-top: 3px;
 }
 
-.ax-conversations :deep(.ax-conversations-item.active .ax-conversations-item-meta) {
+.ax-conversations
+  :deep(.ax-conversations-item.active .ax-conversations-item-meta) {
   color: var(--text-secondary);
 }
 

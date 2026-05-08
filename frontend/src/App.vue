@@ -7,31 +7,31 @@
 <script setup lang="ts"></script>
 
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Source+Serif+4:opsz,wght@8..60,400;8..60,500;8..60,600&family=IBM+Plex+Sans:wght@400;500;600&display=swap');
+@import url("https://fonts.googleapis.com/css2?family=Source+Serif+4:opsz,wght@8..60,400;8..60,500;8..60,600&family=IBM+Plex+Sans:wght@400;500;600&display=swap");
 
 :root {
   /* Warm Terracotta Palette */
-  --primary-color: #C97B5D;
-  --primary-hover: #A85D3E;
-  --primary-light: #E8C4B4;
-  --primary-pale: #FDF6F2;
-  --accent: #8B5A3C;
+  --primary-color: #c97b5d;
+  --primary-hover: #a85d3e;
+  --primary-light: #e8c4b4;
+  --primary-pale: #fdf6f2;
+  --accent: #8b5a3c;
 
   /* Backgrounds */
-  --bg-primary: #FDFBF8;
-  --bg-secondary: #F7F3EE;
-  --bg-tertiary: #EDE8E2;
-  --bg-hover: #E8E0D8;
+  --bg-primary: #fdfbf8;
+  --bg-secondary: #f7f3ee;
+  --bg-tertiary: #ede8e2;
+  --bg-hover: #e8e0d8;
 
   /* Text */
-  --text-primary: #2C2420;
-  --text-secondary: #5C524A;
-  --text-muted: #8B8279;
+  --text-primary: #2c2420;
+  --text-secondary: #5c524a;
+  --text-muted: #8b8279;
 
   /* Borders & Shadows */
-  --border-color: #E0D8D0;
-  --border-light: #EDE8E2;
-  --border-accent: #D4C4B8;
+  --border-color: #e0d8d0;
+  --border-light: #ede8e2;
+  --border-accent: #d4c4b8;
   --shadow-sm: 0 1px 3px rgba(44, 36, 32, 0.06);
   --shadow-md: 0 4px 12px rgba(44, 36, 32, 0.08);
   --shadow-lg: 0 8px 28px rgba(44, 36, 32, 0.12);
@@ -44,8 +44,8 @@
   --radius-full: 9999px;
 
   /* Typography */
-  --font-display: 'Source Serif 4', Georgia, serif;
-  --font-body: 'IBM Plex Sans', -apple-system, sans-serif;
+  --font-display: "Source Serif 4", Georgia, serif;
+  --font-body: "IBM Plex Sans", -apple-system, sans-serif;
 }
 
 * {
@@ -72,13 +72,21 @@
 }
 
 .el-button--primary {
-  background: linear-gradient(135deg, var(--primary-color), var(--accent)) !important;
+  background: linear-gradient(
+    135deg,
+    var(--primary-color),
+    var(--accent)
+  ) !important;
   border: none !important;
   box-shadow: 0 2px 8px rgba(201, 123, 93, 0.25) !important;
 }
 
 .el-button--primary:hover {
-  background: linear-gradient(135deg, var(--primary-hover), var(--accent)) !important;
+  background: linear-gradient(
+    135deg,
+    var(--primary-hover),
+    var(--accent)
+  ) !important;
   box-shadow: 0 4px 12px rgba(201, 123, 93, 0.35) !important;
   transform: translateY(-1px);
 }
@@ -254,13 +262,21 @@
 }
 
 .ant-btn-primary {
-  background: linear-gradient(135deg, var(--primary-color), var(--accent)) !important;
+  background: linear-gradient(
+    135deg,
+    var(--primary-color),
+    var(--accent)
+  ) !important;
   border: none !important;
   box-shadow: 0 2px 8px rgba(201, 123, 93, 0.25) !important;
 }
 
 .ant-btn-primary:hover {
-  background: linear-gradient(135deg, var(--primary-hover), var(--accent)) !important;
+  background: linear-gradient(
+    135deg,
+    var(--primary-hover),
+    var(--accent)
+  ) !important;
   box-shadow: 0 4px 12px rgba(201, 123, 93, 0.35) !important;
 }
 

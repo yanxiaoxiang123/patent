@@ -71,7 +71,7 @@ export function useSSEStream() {
 
   async function startStream(
     body: Record<string, unknown>,
-    options: { apiUrl?: string; model?: string } = {}
+    options: { apiUrl?: string; model?: string } = {},
   ): Promise<{ thinking: string; answer: string }> {
     isLoading.value = true;
     currentThinking.value = "";

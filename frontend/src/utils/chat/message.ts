@@ -62,7 +62,7 @@ export function buildMessageHistory(
 
   return limitedMessages.map((m) => {
     const original =
-      typeof m.fullContent === "string"
+      "fullContent" in m && typeof m.fullContent === "string"
         ? m.fullContent
         : typeof m.content === "string"
           ? m.content
@@ -72,13 +72,13 @@ export function buildMessageHistory(
       // 只保留答案部分，去掉思考过程
       const parts = splitThinking(original);
       return {
-        role: m.role,
+        role: "assistant" as const,
         content: parts.answer || original,
       };
     }
 
     return {
-      role: m.role,
+      role: "user" as const,
       content: original,
     };
   });

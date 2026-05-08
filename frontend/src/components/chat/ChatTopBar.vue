@@ -4,7 +4,12 @@
       <!-- 侧边栏切换按钮 -->
       <div v-if="!showSidebar" class="sidebar-toggle">
         <el-tooltip content="显示聊天记录" placement="bottom">
-          <el-button type="default" size="small" circle @click="emit('toggle-sidebar')">
+          <el-button
+            type="default"
+            size="small"
+            circle
+            @click="emit('toggle-sidebar')"
+          >
             <el-icon><Files /></el-icon>
           </el-button>
         </el-tooltip>

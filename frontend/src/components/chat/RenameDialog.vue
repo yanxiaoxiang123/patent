@@ -24,7 +24,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch } from "vue";
+import { computed, ref, watch } from "vue";
 
 interface Props {
   modelValue: boolean;
@@ -44,7 +44,12 @@ const visible = computed({
 });
 
 const localTitle = ref(props.title);
-watch(() => props.title, (val) => { localTitle.value = val; });
+watch(
+  () => props.title,
+  (val) => {
+    localTitle.value = val;
+  },
+);
 
 function handleConfirm() {
   if (localTitle.value.trim()) {

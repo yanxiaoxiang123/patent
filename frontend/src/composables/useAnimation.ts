@@ -1,4 +1,4 @@
-import { ref, type Ref, type WatchOptions } from "vue";
+import { computed, ref, watch, type Ref, type WatchOptions } from "vue";
 
 // 动画配置
 interface AnimationConfig {
@@ -61,8 +61,18 @@ export function useTypingEffect(
   const displayedText = ref("");
   const isTyping = ref(false);
   const currentIndex = ref(0);
+  let timer: ReturnType<typeof setInterval> | null = null;
+
+  const clearTimer = () => {
+    if (timer !== null) {
+      clearInterval(timer);
+      timer = null;
+    }
+  };
 
   const type = (text: string) => {
+    clearTimer(); // 清除上一个未完成的定时器
+
     if (!text) {
       displayedText.value = "";
       return;
@@ -73,25 +83,25 @@ export function useTypingEffect(
     displayedText.value = "";
 
     let index = 0;
-    const timer = setInterval(() => {
+    timer = setInterval(() => {
       if (index < text.length) {
         displayedText.value += text.charAt(index);
         index++;
       } else {
-        clearInterval(timer);
+        clearTimer();
         isTyping.value = false;
         onComplete?.();
       }
     }, speed);
-
-    return timer;
   };
 
   const stop = () => {
+    clearTimer();
     isTyping.value = false;
   };
 
   const reset = () => {
+    clearTimer();
     displayedText.value = "";
     currentIndex.value = 0;
     isTyping.value = false;

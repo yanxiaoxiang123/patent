@@ -204,14 +204,14 @@ export type ChatMessage = UserMessage | AIMessage | StreamingMessage;
 export interface ChatSession {
   id: number;
   title: string;
-  userId: number;
-  model: string;
+  userId?: number;
+  model?: string;
   documentId?: number;
   messages: ChatMessage[];
   messageCount?: number;
-  createdAt: Date;
-  updatedAt?: Date;
-  lastMessageAt?: Date;
+  createdAt: number | null;
+  updatedAt?: number | null;
+  lastMessageAt?: number | null;
 }
 
 export interface FileAttachment {

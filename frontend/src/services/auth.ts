@@ -4,7 +4,10 @@ import type { LoginForm, User, ApiResponse } from "@/types";
 export const login = async (
   form: LoginForm,
 ): Promise<{ access_token: string; user: User }> => {
-  const response = await api.post("/auth/login", form);
+  const response = (await api.post("/auth/login", form)) as unknown as {
+    access_token: string;
+    user: User;
+  };
   return response;
 };
 

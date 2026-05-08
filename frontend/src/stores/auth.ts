@@ -15,7 +15,7 @@ export const useAuthStore = defineStore("auth", () => {
   // 登录
   const login = async (form: LoginForm) => {
     const response = await loginApi(form);
-    const { access_token, user: userData } = response.data || response;
+    const { access_token, user: userData } = response;
 
     token.value = access_token;
     user.value = userData;
@@ -49,6 +49,7 @@ export const useAuthStore = defineStore("auth", () => {
         user.value = JSON.parse(savedUser);
       }
     } catch {
+      console.warn("用户数据缓存已损坏，已自动清除");
       localStorage.removeItem("user");
     }
   };

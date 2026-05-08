@@ -2,7 +2,7 @@
  * 主视图逻辑 composable
  * 抽离 sendMessage、generateAIResponse、scrollToBottom、事件处理等核心逻辑
  */
-import { ref, watch, nextTick, h, type Ref } from "vue";
+import { ref, watch, nextTick, h, computed, type Ref } from "vue";
 import { ElMessage } from "element-plus";
 import { useClipboard } from "./useCopyToClipboard";
 import type { ChatSession, ChatMessage, FileAttachment } from "@/types";
@@ -28,7 +28,9 @@ interface UseChatViewOptions {
   // 流式思考过程展开状态（来自 useThinking）
   streamingThinkingExpanded: Ref<boolean>;
   // SSE composable
-  startStream: (body: Record<string, unknown>) => Promise<{ thinking: string; answer: string }>;
+  startStream: (
+    body: Record<string, unknown>,
+  ) => Promise<{ thinking: string; answer: string }>;
   abort: () => void;
   resetStream: () => void;
   normalizeAiErrorMessage: (msg: unknown) => string;
@@ -44,7 +46,11 @@ interface UseChatViewOptions {
   activeTemplateId: Ref<number | null>;
   isStrictTemplate: (id: number | null) => boolean;
   isIPCTemplate: (id: number | null) => boolean;
-  buildMessageContent: (templateId: number | null, hasText: boolean, userText?: string) => string;
+  buildMessageContent: (
+    templateId: number | null,
+    hasText: boolean,
+    userText?: string,
+  ) => string;
   buildDisplayContent: (
     templateId: number | null,
     hasText: boolean,
@@ -54,7 +60,9 @@ interface UseChatViewOptions {
   getTemplateById: (id: number | string) => TemplateInfo | undefined;
   selectTemplate: (id: number) => void;
   clearTemplateSelection: () => void;
-  placeholderPromptsItems: Ref<{ key: string; label: string; description: string }[]>;
+  placeholderPromptsItems: Ref<
+    { key: string; label: string; description: string }[]
+  >;
   placeholderPromptsStyles: Record<string, any>;
   // 滚动回调（由主组件从 MessageList 子组件传入）
   scrollToBottom: () => void;
@@ -119,11 +127,19 @@ export function useChatView(options: UseChatViewOptions) {
         { key: "rename", label: "重命名" },
         { key: "delete", label: "删除" },
       ],
-      onClick: ({ key, domEvent }: { key: string; domEvent: Event }) => {
+      onClick: ({
+        key,
+        domEvent,
+      }: {
+        key: string | number;
+        domEvent: MouseEvent | KeyboardEvent;
+      }) => {
         if (key === "delete") {
           deleteSession(Number(conversation.key), domEvent);
         } else if (key === "rename") {
-          const session = sessions.value.find((s) => String(s.id) === conversation.key);
+          const session = sessions.value.find(
+            (s) => String(s.id) === conversation.key,
+          );
           if (session) {
             renameDialogSessionKey.value = conversation.key;
             renameDialogTitle.value = session.title || "新对话";
@@ -164,8 +180,12 @@ export function useChatView(options: UseChatViewOptions) {
   async function sendMessage() {
     if (isLoading.value) return;
 
-    const isAttachmentsReady = uploadedFiles.value.every((f) => f.parsed && !f.error);
-    const isAttachmentsParsing = uploadedFiles.value.some((f) => !f.parsed && !f.error);
+    const isAttachmentsReady = uploadedFiles.value.every(
+      (f) => f.parsed && !f.error,
+    );
+    const isAttachmentsParsing = uploadedFiles.value.some(
+      (f) => !f.parsed && !f.error,
+    );
 
     if (!isAttachmentsReady) {
       ElMessage.warning(
@@ -191,14 +211,18 @@ export function useChatView(options: UseChatViewOptions) {
     );
     const attachments = hasAttachments ? [...uploadedFiles.value] : null;
 
-    messages.value.push({
-      role: "user",
-      content: displayContent,
-      fullContent: messageContent,
-      timestamp: new Date(),
-      attachments,
-      templateId: templateId != null ? Number(templateId) : null,
-    });
+    messages.value = [
+      ...messages.value,
+      {
+        id: Date.now().toString(),
+        role: "user",
+        content: displayContent,
+        fullContent: messageContent,
+        timestamp: new Date(),
+        attachments: attachments ?? undefined,
+        templateId: templateId != null ? Number(templateId) : undefined,
+      },
+    ];
 
     nextTick(() => {
       inputMessage.value = "";
@@ -208,16 +232,16 @@ export function useChatView(options: UseChatViewOptions) {
     attachmentItems.value = [];
 
     const documentId =
-      attachments && attachments.length > 0 ? attachments[0]?.id || null : null;
+      attachments && attachments.length > 0
+        ? typeof attachments[0]?.id === "number"
+          ? attachments[0].id
+          : null
+        : null;
 
-    await generateAIResponse(
-      messageContent,
-      attachments,
-      {
-        templateId: templateId != null ? Number(templateId) : null,
-        documentId,
-      },
-    );
+    await generateAIResponse(messageContent, attachments, {
+      templateId: templateId != null ? Number(templateId) : undefined,
+      documentId: documentId ?? undefined,
+    });
 
     clearTemplateSelection();
   }
@@ -239,7 +263,8 @@ export function useChatView(options: UseChatViewOptions) {
       if (attachments && attachments.length > 0) {
         attachments.forEach((file) => {
           userMessage += `\n文档：${file.name} (${file.type})\n`;
-          const parsedContent = file.parsedContent || (file as any).parsed_content;
+          const parsedContent =
+            file.parsedContent || (file as any).parsed_content;
           if (isIPC && parsedContent?.first_page_content) {
             userMessage += `文档第一页内容：\n${parsedContent.first_page_content.slice(0, 6000)}...\n`;
           } else if (parsedContent?.structured) {
@@ -271,20 +296,25 @@ export function useChatView(options: UseChatViewOptions) {
       };
 
       if (strict) body.template_id = Number(templateId);
-      if (currentBackendSessionId.value) body.session_id = currentBackendSessionId.value;
+      if (currentBackendSessionId.value)
+        body.session_id = currentBackendSessionId.value;
       if (documentId) body.document_id = documentId;
 
       const result = await startStream(body);
 
       currentResponse.value = result.thinking + "\n\n" + result.answer;
 
-      messages.value.push({
-        role: "assistant",
-        content: result.answer || "抱歉，没有收到有效的响应。",
-        thinking: result.thinking,
-        timestamp: new Date(),
-        thinkingExpanded: streamingThinkingExpanded.value,
-      });
+      messages.value = [
+        ...messages.value,
+        {
+          id: Date.now().toString(),
+          role: "assistant",
+          content: result.answer || "抱歉，没有收到有效的响应。",
+          thinking: result.thinking,
+          timestamp: new Date(),
+          thinkingExpanded: streamingThinkingExpanded.value,
+        },
+      ];
 
       nextTick(() => scrollToBottom());
       await refreshSessions();
@@ -292,21 +322,29 @@ export function useChatView(options: UseChatViewOptions) {
       console.error("生成 AI 响应失败:", error);
       if (error?.name === "AbortError") {
         if ((currentAnswer.value || "").trim().length > 0)
-          messages.value.push({
-            role: "assistant",
-            content: currentAnswer.value,
-            thinking: currentThinking.value,
-            timestamp: new Date(),
-            thinkingExpanded: streamingThinkingExpanded.value,
-          });
+          messages.value = [
+            ...messages.value,
+            {
+              id: Date.now().toString(),
+              role: "assistant",
+              content: currentAnswer.value,
+              thinking: currentThinking.value,
+              timestamp: new Date(),
+              thinkingExpanded: streamingThinkingExpanded.value,
+            },
+          ];
       } else {
         const errorMessage = normalizeAiErrorMessage(error?.message);
         ElMessage.error(errorMessage);
-        messages.value.push({
-          role: "assistant",
-          content: errorMessage,
-          timestamp: new Date(),
-        });
+        messages.value = [
+          ...messages.value,
+          {
+            id: Date.now().toString(),
+            role: "assistant",
+            content: errorMessage,
+            timestamp: new Date(),
+          },
+        ];
       }
     } finally {
       resetStream();
@@ -316,11 +354,14 @@ export function useChatView(options: UseChatViewOptions) {
   // --- 重新生成 ---
   async function regenerateResponse(index: number) {
     const prev = messages.value[index - 1];
-    if (typeof (prev?.fullContent || prev?.content) === "string") {
-      messages.value.splice(index);
+    if (
+      prev?.role === "user" &&
+      typeof (prev.fullContent || prev.content) === "string"
+    ) {
+      messages.value = messages.value.slice(0, index);
       await generateAIResponse(
         prev.fullContent || prev.content,
-        prev.attachments,
+        prev.attachments ?? null,
         { templateId: prev.templateId },
       );
     }
@@ -402,7 +443,7 @@ export function useChatView(options: UseChatViewOptions) {
   // --- 渲染发送按钮 ---
   function renderSenderActions(
     _ori: unknown,
-    { components }: { components: { LoadingButton: unknown; SendButton: unknown } },
+    { components }: { components: { LoadingButton: any; SendButton: any } },
   ) {
     if (isLoading.value) return h(components.LoadingButton);
     const hasText = !!inputMessage.value.trim();
@@ -467,7 +508,9 @@ export function useChatView(options: UseChatViewOptions) {
       }),
     ),
     activeConversationKey: computed(() =>
-      currentSessionId.value == null ? undefined : String(currentSessionId.value),
+      currentSessionId.value == null
+        ? undefined
+        : String(currentSessionId.value),
     ),
     // methods
     conversationMenu,

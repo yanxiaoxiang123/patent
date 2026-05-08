@@ -78,7 +78,7 @@ const props = withDefaults(defineProps<Props>(), {
   padding: 2px 6px;
   border-radius: 4px;
   font-size: 13px;
-  font-family: 'JetBrains Mono', 'Fira Code', monospace;
+  font-family: "JetBrains Mono", "Fira Code", monospace;
 }
 
 .markdown-content :deep(pre) {
@@ -103,7 +103,13 @@ const props = withDefaults(defineProps<Props>(), {
 }
 
 @keyframes cursorBlink {
-  0%, 50% { opacity: 1; }
-  51%, 100% { opacity: 0; }
+  0%,
+  50% {
+    opacity: 1;
+  }
+  51%,
+  100% {
+    opacity: 0;
+  }
 }
 </style>
