@@ -16,20 +16,20 @@
 </template>
 
 <script setup lang="ts">
-import MarkdownRender from 'markstream-vue'
+import MarkdownRender from "markstream-vue";
 
 interface Props {
-  content: string
-  isStreaming?: boolean
-  hasThinking?: boolean
-  customId?: string
+  content: string;
+  isStreaming?: boolean;
+  hasThinking?: boolean;
+  customId?: string;
 }
 
 const props = withDefaults(defineProps<Props>(), {
   isStreaming: false,
   hasThinking: false,
-  customId: '',
-})
+  customId: "",
+});
 </script>
 
 <style scoped>
@@ -61,10 +61,12 @@ const props = withDefaults(defineProps<Props>(), {
 }
 
 @keyframes cursorBlink {
-  0%, 50% {
+  0%,
+  50% {
     opacity: 1;
   }
-  51%, 100% {
+  51%,
+  100% {
     opacity: 0;
   }
 }

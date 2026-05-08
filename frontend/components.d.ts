@@ -9,6 +9,7 @@ declare module 'vue' {
   export interface GlobalComponents {
     ChatSessionItem: typeof import('./src/components/chat/ChatSessionItem.vue')['default']
     ChatTopBar: typeof import('./src/components/chat/ChatTopBar.vue')['default']
+    ContentPreviewDialog: typeof import('./src/components/common/ContentPreviewDialog.vue')['default']
     ElButton: typeof import('element-plus/es')['ElButton']
     ElDialog: typeof import('element-plus/es')['ElDialog']
     ElDropdown: typeof import('element-plus/es')['ElDropdown']

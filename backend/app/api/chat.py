@@ -23,6 +23,7 @@ from app.services.chat_persistence import (
     get_user_sessions,
     get_session_messages,
     delete_session,
+    update_session,
 )
 from app.services.rule_retriever import get_rule_retriever
 from app.core.security import parse_auth_header, TokenPayload
@@ -396,6 +397,31 @@ async def remove_session(session_id: int, request: Request):
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="会话不存在")
 
     return {"message": "会话已删除"}
+
+
+class SessionUpdateRequest(BaseModel):
+    """会话更新请求"""
+    title: str = Field(..., min_length=1, max_length=255, description="会话标题")
+
+
+@router.patch("/sessions/{session_id}")
+async def rename_session(session_id: int, update_req: SessionUpdateRequest, request: Request):
+    """重命名会话"""
+    if session_id <= 0:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="无效的会话ID")
+
+    user_id = get_user_id_from_request(request)
+    if not user_id:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="未登录")
+
+    try:
+        success = await update_session(session_id, user_id, update_req.title)
+        if not success:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="会话不存在")
+    except ValueError as e:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+
+    return {"message": "会话已重命名", "title": update_req.title}
 
 
 # ===================== 模型管理 =====================

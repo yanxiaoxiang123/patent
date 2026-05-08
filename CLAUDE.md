@@ -1,6 +1,11 @@
+---
+description: 
+alwaysApply: true
+---
+
 # CLAUDE.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with this repository.
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
 ## Project Overview
 
@@ -17,13 +22,14 @@ cd backend
 # Or (Linux/Mac)
 source .venv/bin/activate
 
+# Install dependencies
+pip install -r requirements.txt
+
 # Development server with auto-reload
 python -m uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
-# Or
-python app/main.py
 
-# Production server
-python -m uvicorn app.main:app --host 0.0.0.0 --port 8000 --workers 2
+# Run tests
+pytest tests/ -v
 
 # API docs: http://localhost:8000/docs
 # Health check: http://localhost:8000/health
@@ -39,20 +45,17 @@ npm install
 # Development server (port 5173, proxies /api to backend:8000)
 npm run dev
 
-# Production build
-npm run build
-
 # Type check
 npm run type-check
 
 # Lint and fix
 npm run lint
-```
 
-### Database
-```bash
-mysql -u root -p -D iprs
-# Tables auto-create on FastAPI startup via SQLAlchemy models
+# Build for production
+npm run build
+
+# Run tests
+npm run test
 ```
 
 ## Architecture
@@ -67,7 +70,7 @@ backend/app/
 │   ├── chat.py          # AI chat, SSE streaming, Ollama integration
 │   └── admin.py         # User management (admin only)
 ├── core/
-│   ├── config.py        # App configuration, environment variables
+│   ├── config.py        # App configuration, environment variables (.env in backend/)
 │   ├── security.py      # Token parsing, password hashing
 │   ├── middleware.py    # Rate limiting, request size limit, security headers
 │   └── redis_client.py  # Redis connection for rate limiting
@@ -80,8 +83,11 @@ backend/app/
 │   ├── chat_persistence.py  # Chat session/message persistence
 │   └── rule_retriever.py    # Rule retrieval for patent audit
 ├── prompts/
-│   └── rules/
-│       └── loader.py        # Patent audit rule templates loader
+│   └── rules/               # Patent audit rule JSON templates
+│       ├── general_case_rules.json      (template_id=1)
+│       ├── patent_guidance_rules.json   (template_id=2)
+│       ├── project_case_rules.json      (template_id=3)
+│       └── ipc_classification_rules.json (template_id=5)
 └── utils/
     ├── database.py      # SQLAlchemy session management
     └── passwords.py     # Password hashing utilities
@@ -96,21 +102,37 @@ frontend/src/
 │   ├── message-bubble/  # Message bubble components with thinking process support
 │   └── common/          # Shared components (ErrorBoundary, FilePreviewDialog, etc.)
 ├── services/            # API clients (api.ts, auth.ts, documents.ts, admin.ts)
-├── stores/               # Pinia stores (auth.ts, documents.ts, chat.ts)
-├── composables/           # Vue composables (useChatSession, useThinking, etc.)
+├── stores/              # Pinia stores (auth.ts, documents.ts, chat.ts)
+├── composables/         # Vue composables (useChatSession, useThinking, etc.)
 ├── router/
 │   └── simple.ts        # Vue Router configuration
-├── types/               # TypeScript interfaces
-├── utils/
-│   ├── chat/            # Chat utilities (thinking.ts, message.ts)
-│   └── patentPrompts.ts # Patent-specific prompt templates
-└── main.ts              # Vue app entry, router, pinia, UI library setup
+├── types/              # TypeScript interfaces
+└── utils/
+    ├── chat/            # Chat utilities (thinking.ts, message.ts)
+    └── patentPrompts.ts # Patent-specific prompt templates
 ```
+
+## Review Agent System (审核智能体)
+
+规则模板位于 `backend/app/prompts/rules/`，通过以下流程工作：
+
+```
+JSON 规则文件 → loader.py 加载 → rule_retriever.py 格式化 → chat.py API → SSE 流式响应 → 前端展示
+```
+
+支持的审核类型：
+
+| template_id | 名称 | 规则文件 |
+|-------------|------|---------|
+| 1 | 普通案例审核 | `general_case_rules.json` |
+| 2 | 专利审核指导 | `patent_guidance_rules.json` |
+| 3 | 专案案例审核 | `project_case_rules.json` |
+| 5 | IPC 分类指导 | `ipc_classification_rules.json` |
 
 ## Authentication
 
 - **Token-based**: Simple token stored in localStorage (`simple_token_{user_id}_{username}`)
-- **Required env var**: `TOKEN_SECRET` must be set in backend/.env
+- **Required env var**: `TOKEN_SECRET` must be set in `backend/.env`
 - **Password**: SHA256 hashed via `app/core/security.py`
 - **Rate limiting**: Login attempts limited via Redis (5 per minute per IP)
 
@@ -129,28 +151,7 @@ frontend/src/
 - **Base URL**: `http://localhost:11434` (configurable via `OLLAMA_URL`)
 - **Streaming**: SSE with OpenAI-compatible chunk format (`choices[0].delta.content`)
 - **Thinking process**: `think: true` enabled, returned as `delta.thinking`
-- **Config file**: `app/core/config.py:54-55`
-
-## Key Patterns
-
-### SSE Streaming Response
-```python
-# app/api/chat.py uses sse_starlette.sse.EventSourceResponse
-async def stream_generator():
-    async for chunk in ollama_stream():
-        yield f"{json.dumps(chunk)}\n\n"
-    yield "[DONE]\n\n"
-return EventSourceResponse(stream_generator(), headers=sse_headers)
-```
-
-### Middleware Stack
-- Rate limiting (Redis-based, 100 requests/minute general, 5/minute for login)
-- Request body size limit (10MB)
-- Security headers
-
-### Document Parsing
-- **Supported**: `.docx` (python-docx), `.pdf` (pdfplumber)
-- **Status flow**: `uploaded` → `parsing` → `parsed` | `error`
+- **Config**: `app/core/config.py` loads from `backend/.env`
 
 ## Database Tables
 
@@ -162,14 +163,9 @@ return EventSourceResponse(stream_generator(), headers=sse_headers)
 | `chat_messages` | id, session_id, user_id, role, content, model, document_id, message_index |
 | `review_records` | id, document_id, review_type, model_version, result_json, score, error_count |
 
-## Test Accounts
-
-| Username | Password | Role |
-|----------|----------|------|
-| admin | (set in .env) | admin |
-| lizhuanyuan | (set in .env) | user |
-
 ## Key Configuration (.env)
+
+`.env` 文件位于 `backend/.env`：
 
 ```env
 # Required
@@ -189,12 +185,6 @@ OLLAMA_MODEL=qwen3:8b
 # Redis (for rate limiting)
 REDIS_HOST=localhost
 REDIS_PORT=6379
-
-# Optional
-DEBUG=true
-CORS_ORIGINS=["http://localhost:5173"]
-RATE_LIMIT_MAX=100
-RATE_LIMIT_LOGIN_MAX=5
 ```
 
 ## Ports
@@ -207,26 +197,9 @@ RATE_LIMIT_LOGIN_MAX=5
 | 3306 | MySQL |
 | 6379 | Redis |
 
-## Review Agents (审核智能体)
+## Test Accounts
 
-The four audit agents are **rule-based**, not traditional agent frameworks:
-
-| template_id | Name | Rule File | Purpose |
-|-------------|------|-----------|---------|
-| 1 | 普通案例审核 | `general_case_rules.json` | Standard patent case review |
-| 2 | 专利审核指导 | `patent_guidance_rules.json` | Patent audit guidance |
-| 3 | 专案案例审核 | `project_case_rules.json` | Special project case review |
-| 5 | IPC 分类指导 | `ipc_classification_rules.json` | IPC classification guidance |
-
-### Implementation Flow
-```
-JSON Rules → prompts/rules/loader.py → services/rule_retriever.py → api/chat.py → SSE → Frontend
-```
-
-### Review Flow
-1. User uploads patent document
-2. `document_parser.py` extracts text from .docx/.pdf
-3. User selects template_id (audit type)
-4. `rule_retriever.get_system_prompt()` loads and formats rules
-5. Ollama generates structured audit report via SSE streaming
-6. `trim_to_strict_report()` extracts the structured report portion
+| Username | Password | Role |
+|----------|----------|------|
+| admin | (set in .env) | admin |
+| lizhuanyuan | (set in .env) | user |

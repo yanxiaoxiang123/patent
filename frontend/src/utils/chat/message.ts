@@ -52,10 +52,10 @@ export function generateSessionTitle(messages: ChatMessage[]): string {
  */
 export function buildMessageHistory(
   messages: ChatMessage[],
-  limit: number = 10
+  limit: number = 10,
 ): Array<{ role: string; content: string }> {
   const conversationMessages = messages.filter(
-    (m) => m.role === "user" || m.role === "assistant"
+    (m) => m.role === "user" || m.role === "assistant",
   );
 
   const limitedMessages = conversationMessages.slice(-limit);

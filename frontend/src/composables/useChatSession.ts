@@ -15,7 +15,7 @@ export function useChatSession() {
   const loading = ref(false);
 
   const currentSession = computed(() =>
-    sessions.value.find((s) => s.id === currentSessionId.value)
+    sessions.value.find((s) => s.id === currentSessionId.value),
   );
 
   /**
@@ -33,10 +33,11 @@ export function useChatSession() {
         loadedSessions.push({
           id: s.id,
           title: s.title || "新对话",
-          messages: [],  // 不在这里加载消息，等用户点击时再按需加载
+          messages: [], // 不在这里加载消息，等用户点击时再按需加载
           createdAt: s.created_at ? new Date(s.created_at).getTime() : null,
           updatedAt: lastTime ? new Date(lastTime).getTime() : null,
-          messageCount: typeof s.message_count === "number" ? s.message_count : 0,
+          messageCount:
+            typeof s.message_count === "number" ? s.message_count : 0,
         });
       }
 
@@ -52,64 +53,67 @@ export function useChatSession() {
   /**
    * 获取会话消息
    */
-  const fetchSessionMessages = async (sessionId: number): Promise<ChatMessage[]> => {
+  const fetchSessionMessages = async (
+    sessionId: number,
+  ): Promise<ChatMessage[]> => {
     try {
       const sessionData: any = await api.get(`/ai/sessions/${sessionId}`);
 
       // 防御性检查
-      if (!sessionData || typeof sessionData !== 'object') {
+      if (!sessionData || typeof sessionData !== "object") {
         console.warn("会话数据为空或格式错误:", sessionData);
         return [];
       }
 
-      // 获取会话关联的文档信息
-      let documentInfo: any = null;
-      if (sessionData.document_id) {
-        try {
-          const docData = await api.get(`/documents/${sessionData.document_id}`);
-          if (docData) {
-            documentInfo = docData;
-          }
-        } catch (e) {
-          console.warn("获取文档信息失败:", e);
-        }
-      }
+      // 直接使用后端返回的文档信息（已 JOIN，无需额外 API 调用）
+      const documentInfo: any = sessionData.document || null;
 
-      // 构建附件信息
       const getAttachments = (msgDocumentId: number | null): any[] => {
-        if (!msgDocumentId || !documentInfo) return [];
-        return [{
-          id: documentInfo.id,
-          name: documentInfo.title || `文档-${msgDocumentId}`,
-          type: documentInfo.file_type || "docx",
-          size: documentInfo.file_size || 0,
-          parsed: documentInfo.status === "parsed" || documentInfo.status === "completed",
-          parsedContent: documentInfo.parsed_content || null,
-          parsed_content: documentInfo.parsed_content || null,
-        }];
+        const msgDoc = msgDocumentId
+          ? (sessionData.messages || []).find((m: any) => m.document_id === msgDocumentId)?.document
+          : null;
+        const doc = msgDoc || documentInfo;
+        if (!doc) return [];
+        return [
+          {
+            id: doc.id,
+            name: doc.title || `文档-${msgDocumentId || doc.id}`,
+            type: doc.file_type || "docx",
+            size: doc.file_size || 0,
+            parsed:
+              doc.status === "parsed" || doc.status === "completed",
+            parsedContent: doc.parsed_content || null,
+            parsed_content: doc.parsed_content || null,
+          },
+        ];
       };
 
-      const list: ChatMessage[] = (sessionData.messages || []).map((item: any) => {
-        let content = item.content || "";
+      const list: ChatMessage[] = (sessionData.messages || []).map(
+        (item: any) => {
+          let content = item.content || "";
 
-        // 如果是用户消息、有附件、内容很短或为空，认为是模板审核，显示简短提示
-        const isUserMessage = item.role === "user";
-        const hasAttachments = !!item.document_id;
-        // 如果消息内容很短（少于30字符）且有附件，认为是模板审核场景
-        const isLikelyTemplateAudit = content.length < 30;
+          // 如果是用户消息、有附件、内容很短或为空，认为是模板审核，显示简短提示
+          const isUserMessage = item.role === "user";
+          const hasAttachments = !!item.document_id;
+          // 如果消息内容很短（少于30字符）且有附件，认为是模板审核场景
+          const isLikelyTemplateAudit = content.length < 30;
 
-        if (isUserMessage && hasAttachments && isLikelyTemplateAudit) {
-          content = "（已上传文档，按模板审核）";
-        }
+          if (isUserMessage && hasAttachments && isLikelyTemplateAudit) {
+            content = "（已上传文档，按模板审核）";
+          }
 
-        return {
-          role: item.role,
-          content: content,
-          fullContent: item.content || "",
-          timestamp: item.created_at ? new Date(item.created_at) : new Date(),
-          attachments: item.role === "user" ? getAttachments(item.document_id) : undefined,
-        };
-      });
+          return {
+            role: item.role,
+            content: content,
+            fullContent: item.content || "",
+            timestamp: item.created_at ? new Date(item.created_at) : new Date(),
+            attachments:
+              item.role === "user"
+                ? getAttachments(item.document_id)
+                : undefined,
+          };
+        },
+      );
 
       const sessionIndex = sessions.value.findIndex((s) => s.id === sessionId);
       if (sessionIndex !== -1) {
@@ -185,6 +189,31 @@ export function useChatSession() {
   };
 
   /**
+   * 重命名会话
+   */
+  const renameSession = async (sessionId: number, newTitle: string) => {
+    try {
+      await api.patch(`/ai/sessions/${sessionId}`, { title: newTitle });
+
+      // Update local state
+      const index = sessions.value.findIndex((s) => s.id === sessionId);
+      if (index !== -1) {
+        sessions.value[index] = {
+          ...sessions.value[index],
+          title: newTitle,
+          updatedAt: Date.now(),
+        };
+      }
+
+      ElMessage.success("会话已重命名");
+    } catch (error) {
+      console.error("重命名会话失败:", error);
+      ElMessage.error("重命名会话失败，请稍后重试");
+      throw error;
+    }
+  };
+
+  /**
    * 保存当前会话
    */
   const saveCurrentSession = () => {
@@ -223,7 +252,9 @@ export function useChatSession() {
         };
       }
     } else if (currentSessionId.value) {
-      const index = sessions.value.findIndex((s) => s.id === currentSessionId.value);
+      const index = sessions.value.findIndex(
+        (s) => s.id === currentSessionId.value,
+      );
       if (index !== -1) {
         sessions.value[index] = {
           ...sessions.value[index],
@@ -246,6 +277,7 @@ export function useChatSession() {
     switchSession,
     createSession,
     deleteSession,
+    renameSession,
     saveCurrentSession,
     refreshSessions,
   };

@@ -6,21 +6,55 @@ import shutil
 import logging
 import time
 import asyncio
+import json
 from pathlib import Path
 from typing import List, Optional
-from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Query, status
+
+from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Query, status, Request
 from fastapi.responses import FileResponse
+from sse_starlette.sse import EventSourceResponse
 from sqlalchemy import select, and_, or_, desc, func
 from sqlalchemy.orm import selectinload
 
-from ..utils.database import AsyncSessionLocal
-from ..models import Document as DocumentModel, User
-from ..api.auth import get_current_user_model
-from ..services.document_parser import document_parser
-from ..schemas.document import (
+from app.core.security import parse_auth_header, TokenPayload
+from app.utils.database import AsyncSessionLocal
+from app.models import Document as DocumentModel, User as UserModel
+from app.api.auth import get_current_user_model
+from app.services.document_parser import document_parser
+from app.schemas.document import (
     DocumentResponse, DocumentListResponse, DocumentUploadRequest,
     DocumentParseRequest, DocumentParseResponse, DocumentStatus, FileType
 )
+
+
+async def get_current_user_from_request(request: Request) -> UserModel:
+    """从请求中获取当前用户（支持Header或Query参数，用于不支持自定义Header的SSE场景）"""
+    auth_header = request.headers.get("Authorization")
+    token_query = request.query_params.get("token")
+    if not auth_header and token_query:
+        auth_header = f"Bearer {token_query}"
+
+    token_payload: Optional[TokenPayload] = parse_auth_header(auth_header)
+    if not token_payload:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="未认证或Token已过期"
+        )
+
+    async with AsyncSessionLocal() as session:
+        result = await session.execute(
+            select(UserModel).where(UserModel.id == token_payload.user_id)
+        )
+        user = result.scalar_one_or_none()
+
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="用户不存在"
+        )
+
+    return user
+
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -45,7 +79,8 @@ Path(UPLOAD_DIR).mkdir(parents=True, exist_ok=True)
 def validate_file(file: UploadFile) -> None:
     """验证上传文件 - 检查大小、扩展名和内容类型"""
     # 检查文件大小
-    if hasattr(file, 'size') and file.size and file.size > MAX_FILE_SIZE:
+    file_size = getattr(file, 'size', None)
+    if file_size and file_size > MAX_FILE_SIZE:
         raise HTTPException(
             status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
             detail=f"文件大小超过限制 ({MAX_FILE_SIZE} 字节)"
@@ -98,7 +133,7 @@ def validate_file(file: UploadFile) -> None:
 async def upload_document(
     file: UploadFile = File(...),
     title: Optional[str] = None,
-    current_user: User = Depends(get_current_user_model)
+    current_user: UserModel = Depends(get_current_user_model)
 ):
     """
     上传专利文档
@@ -155,7 +190,7 @@ async def list_documents(
     size: int = Query(10, ge=1, le=100, description="每页大小"),
     status: Optional[DocumentStatus] = Query(None, description="状态筛选"),
     search: Optional[str] = Query(None, description="搜索关键词"),
-    current_user: User = Depends(get_current_user_model)
+    current_user: UserModel = Depends(get_current_user_model)
 ):
     """
     获取用户的文档列表
@@ -173,6 +208,8 @@ async def list_documents(
                 or_(
                     DocumentModel.title.ilike(search_term),
                     DocumentModel.parsed_content['structured']['title'].astext.ilike(search_term)
+                    if DocumentModel.parsed_content is not None
+                    else DocumentModel.title.ilike(search_term)
                 )
             )
 
@@ -212,7 +249,7 @@ async def list_documents(
 @router.get("/{document_id}", response_model=DocumentResponse)
 async def get_document(
     document_id: int,
-    current_user: User = Depends(get_current_user_model)
+    current_user: UserModel = Depends(get_current_user_model)
 ):
     """
     获取文档详情
@@ -249,7 +286,7 @@ async def get_document(
 @router.post("/{document_id}/parse", response_model=DocumentParseResponse)
 async def parse_document(
     document_id: int,
-    current_user: User = Depends(get_current_user_model)
+    current_user: UserModel = Depends(get_current_user_model)
 ):
     """
     解析文档内容
@@ -337,10 +374,143 @@ async def parse_document(
         )
 
 
+# SSE 事件流配置
+SSE_HEADERS = {
+    "Cache-Control": "no-cache",
+    "X-Accel-Buffering": "no",
+    "Connection": "keep-alive",
+}
+
+
+@router.post("/{document_id}/parse/stream")
+async def parse_document_stream(
+    document_id: int,
+    request: Request,
+    token: Optional[str] = Query(None, description="认证Token（EventSource不支持自定义header，可通过Query参数传递）"),
+    current_user: UserModel = Depends(get_current_user_from_request)
+):
+    """解析文档内容 (SSE 流式响应)
+
+    通过SSE实时推送解析进度，包括以下阶段:
+    - extracting_text: 提取文件文本内容
+    - analyzing_structure: 分析文档结构
+    - extracting_sections: 提取专利章节信息
+    - assessing_quality: 评估解析质量
+    - complete: 解析完成
+
+    注意: 由于EventSource不支持自定义Header，可通过token查询参数传递认证信息
+    """
+    import json
+
+    async def event_generator():
+        try:
+            # 获取文档
+            async with AsyncSessionLocal() as session:
+                query = select(DocumentModel).where(
+                    and_(
+                        DocumentModel.id == document_id,
+                        DocumentModel.user_id == current_user.id
+                    )
+                )
+                result = await session.execute(query)
+                document = result.scalar_one_or_none()
+
+                if not document:
+                    error_data = {"stage": "error", "percent": 0, "message": "文档不存在"}
+                    yield {"event": "progress", "data": json.dumps(error_data, ensure_ascii=False)}
+                    return
+
+                if not os.path.exists(document.file_path):
+                    error_data = {"stage": "error", "percent": 0, "message": "文档文件不存在"}
+                    yield {"event": "progress", "data": json.dumps(error_data, ensure_ascii=False)}
+                    return
+
+                # 更新状态为解析中
+                document.status = DocumentStatus.PARSING
+                await session.commit()
+
+            # 阶段1: 提取文本
+            yield {"event": "progress", "data": json.dumps({"stage": "extracting_text", "percent": 10, "message": "正在提取文件文本内容..."}, ensure_ascii=False)}
+            await asyncio.sleep(0.1)
+
+            # 阶段2: 分析结构
+            yield {"event": "progress", "data": json.dumps({"stage": "analyzing_structure", "percent": 40, "message": "正在分析文档结构..."}, ensure_ascii=False)}
+            await asyncio.sleep(0.1)
+
+            # 阶段3: 提取章节
+            yield {"event": "progress", "data": json.dumps({"stage": "extracting_sections", "percent": 70, "message": "正在提取专利章节信息..."}, ensure_ascii=False)}
+            await asyncio.sleep(0.1)
+
+            # 阶段4: 评估质量
+            yield {"event": "progress", "data": json.dumps({"stage": "assessing_quality", "percent": 90, "message": "正在评估解析质量..."}, ensure_ascii=False)}
+
+            # 实际解析
+            try:
+                parsed_content = await asyncio.wait_for(
+                    document_parser.parse_document(
+                        document.file_path,
+                        document.file_type
+                    ),
+                    timeout=PARSE_TIMEOUT
+                )
+
+                # 更新数据库
+                async with AsyncSessionLocal() as session:
+                    doc_query = select(DocumentModel).where(DocumentModel.id == document_id)
+                    doc_result = await session.execute(doc_query)
+                    doc = doc_result.scalar_one_or_none()
+                    if doc:
+                        doc.parsed_content = parsed_content
+                        doc.status = DocumentStatus.PARSED
+                        await session.commit()
+
+                # 发送完成事件
+                yield {"event": "progress", "data": json.dumps({
+                    "stage": "complete",
+                    "percent": 100,
+                    "message": "解析完成",
+                    "result": {
+                        "document_id": document_id,
+                        "status": "parsed",
+                        "quality": parsed_content.get("sections", {}).get("parsing_quality", "unknown")
+                    }
+                }, ensure_ascii=False)}
+                yield {"event": "done", "data": "[DONE]"}
+
+            except asyncio.TimeoutError:
+                async with AsyncSessionLocal() as session:
+                    doc_query = select(DocumentModel).where(DocumentModel.id == document_id)
+                    doc_result = await session.execute(doc_query)
+                    doc = doc_result.scalar_one_or_none()
+                    if doc:
+                        doc.status = DocumentStatus.ERROR
+                        await session.commit()
+
+                yield {"event": "progress", "data": json.dumps({"stage": "error", "percent": 0, "message": "解析超时"}, ensure_ascii=False)}
+
+            except Exception as parse_error:
+                async with AsyncSessionLocal() as session:
+                    doc_query = select(DocumentModel).where(DocumentModel.id == document_id)
+                    doc_result = await session.execute(doc_query)
+                    doc = doc_result.scalar_one_or_none()
+                    if doc:
+                        doc.status = DocumentStatus.ERROR
+                        await session.commit()
+
+                yield {"event": "progress", "data": json.dumps({"stage": "error", "percent": 0, "message": str(parse_error)}, ensure_ascii=False)}
+
+        except Exception as e:
+            logger.error(f"SSE解析文档失败: {str(e)}")
+            yield {"event": "progress", "data": json.dumps({"stage": "error", "percent": 0, "message": str(e)}, ensure_ascii=False)}
+
+    return EventSourceResponse(event_generator(), headers=SSE_HEADERS)
+
+
+
 @router.delete("/{document_id}")
 async def delete_document(
     document_id: int,
-    current_user: User = Depends(get_current_user_model)
+    current_user: UserModel = Depends(get_current_user_model)
 ):
     """
     删除文档
@@ -388,7 +558,7 @@ async def delete_document(
 @router.get("/{document_id}/download")
 async def download_document(
     document_id: int,
-    current_user: User = Depends(get_current_user_model)
+    current_user: UserModel = Depends(get_current_user_model)
 ):
     """
     下载文档文件

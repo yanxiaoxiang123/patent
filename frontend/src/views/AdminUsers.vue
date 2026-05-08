@@ -29,20 +29,20 @@
     </div>
 
     <!-- 用户列表 -->
-    <el-table :data="users" style="width: 100%" v-loading="loading">
+    <el-table v-loading="loading" :data="users" style="width: 100%">
       <el-table-column prop="id" label="ID" width="80" />
       <el-table-column prop="username" label="用户名" />
       <el-table-column prop="role" label="角色" width="100">
         <template #default="{ row }">
           <el-tag :type="row.role === 'admin' ? 'danger' : 'info'">
-            {{ row.role === 'admin' ? '管理员' : '用户' }}
+            {{ row.role === "admin" ? "管理员" : "用户" }}
           </el-tag>
         </template>
       </el-table-column>
       <el-table-column label="状态" width="100">
         <template #default="{ row }">
           <el-tag :type="row.is_active ? 'success' : 'danger'">
-            {{ row.is_active ? '启用' : '禁用' }}
+            {{ row.is_active ? "启用" : "禁用" }}
           </el-tag>
         </template>
       </el-table-column>
@@ -50,7 +50,7 @@
       <el-table-column prop="full_name" label="姓名" width="120" />
       <el-table-column prop="last_login_at" label="最后登录" width="180">
         <template #default="{ row }">
-          {{ row.last_login_at ? formatDate(row.last_login_at) : '-' }}
+          {{ row.last_login_at ? formatDate(row.last_login_at) : "-" }}
         </template>
       </el-table-column>
       <el-table-column prop="created_at" label="创建时间" width="180">
@@ -68,7 +68,7 @@
             size="small"
             @click="handleToggleStatus(row)"
           >
-            {{ row.is_active ? '禁用' : '启用' }}
+            {{ row.is_active ? "禁用" : "启用" }}
           </el-button>
           <el-popconfirm
             title="确定删除该用户？"

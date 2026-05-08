@@ -161,7 +161,7 @@ export interface PaginatedResponse<T> {
 }
 
 // 聊天相关类型 - 扩展版本（推荐使用）
-export type MessageRole = 'user' | 'assistant' | 'ai' | 'system';
+export type MessageRole = "user" | "assistant" | "ai" | "system";
 
 export interface ChatMessageBase {
   id: string;
@@ -171,14 +171,14 @@ export interface ChatMessageBase {
 }
 
 export interface UserMessage extends ChatMessageBase {
-  role: 'user';
+  role: "user";
   fullContent?: string;
   attachments?: FileAttachment[];
   templateId?: number;
 }
 
 export interface AIMessage extends ChatMessageBase {
-  role: 'ai' | 'assistant';
+  role: "ai" | "assistant";
   thinking?: string;
   thinkingExpanded?: boolean;
 }
@@ -217,7 +217,7 @@ export interface FileAttachment {
   error?: boolean;
   parsingThinkingSteps?: Array<{
     step: string;
-    status: 'pending' | 'loading' | 'completed' | 'error';
+    status: "pending" | "loading" | "completed" | "error";
     message?: string;
   }>;
   progress?: number;

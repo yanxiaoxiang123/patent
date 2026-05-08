@@ -255,24 +255,17 @@
         </el-dialog>
 
         <!-- 预览对话框 -->
-        <el-dialog
+        <ContentPreviewDialog
           v-model="previewDialogVisible"
           :title="previewTitle"
-          width="600px"
-        >
-          <div class="preview-content">
-            <pre>{{ previewContent }}</pre>
-          </div>
-          <template #footer>
-            <el-button @click="previewDialogVisible = false">关闭</el-button>
-          </template>
-        </el-dialog>
+          :content="previewContent"
+        />
       </div>
     </div>
   </div>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { ref, reactive, h, nextTick, watch, onMounted, computed } from "vue";
 import { ElMessage } from "element-plus";
 import { Files } from "@element-plus/icons-vue";
@@ -296,7 +289,10 @@ import { useThinking } from "@/composables/useThinking";
 import { useChatSession } from "@/composables/useChatSession";
 import { useFileUpload } from "@/composables/useFileUpload";
 import { useClipboard } from "@/composables/useCopyToClipboard";
+import { useSSEStream } from "@/composables/useSSEStream";
+import { useTemplateSelector } from "@/composables/useTemplateSelector";
 import MessageBubble from "@/components/message-bubble/index.vue";
+import ContentPreviewDialog from "@/components/common/ContentPreviewDialog.vue";
 
 const UPLOADED_FILES_STORAGE_KEY = "patent_uploaded_files";
 const AI_MODEL_STORAGE_KEY = "patent_ai_model";
@@ -315,6 +311,7 @@ const {
   loadSessions,
   createSession,
   deleteSession,
+  renameSession,
   refreshSessions,
   switchSession,
 } = useChatSession();
@@ -329,59 +326,46 @@ const {
   loadUploadedFiles,
 } = useFileUpload();
 const { copy } = useClipboard();
+const {
+  currentThinking,
+  currentAnswer,
+  isLoading,
+  currentController,
+  startStream,
+  abort,
+  reset: resetStream,
+  normalizeAiErrorMessage,
+} = useSSEStream();
+const {
+  activeTemplateId,
+  templates: patentTemplates,
+  primaryTemplates,
+  secondaryTemplates,
+  placeholderPromptsItems,
+  placeholderPromptsStyles,
+  getTemplateById,
+  isStrictTemplate,
+  isIPCTemplate,
+  buildMessageContent,
+  buildDisplayContent,
+  selectTemplate,
+  clearSelection: clearTemplateSelection,
+} = useTemplateSelector();
 
 // State
 const showSidebar = ref(false);
 const inputMessage = ref("");
-const isLoading = ref(false);
 const currentResponse = ref("");
-const currentThinking = ref("");
-const currentAnswer = ref("");
-const currentController = ref(null);
 const attachmentsOpen = ref(false);
 const showSettings = ref(false);
 const previewDialogVisible = ref(false);
 const previewTitle = ref("");
 const previewContent = ref("");
-const currentTemplateId = ref(null);
 const bubbleListRef = ref(null);
 const currentBackendSessionId = ref(null);
 const authStore = useAuthStore();
 authStore.initUser();
 const isAdmin = computed(() => authStore.isAdmin);
-
-// Templates
-const patentTemplates = ref([
-  {
-    id: 1,
-    title: "普通案例审核",
-    icon: "Document",
-    description: "对上传的普通案例进行审核并给出建议",
-    prompt: "",
-  },
-  {
-    id: 3,
-    title: "专案案例审核",
-    icon: "EditPen",
-    description: "对上传的专案案例进行审核并输出报告",
-    prompt: "",
-  },
-  {
-    id: 2,
-    title: "专利审核指导",
-    icon: "EditPen",
-    description: "学习专利申请文件的审核技巧",
-    prompt: "根据我刚刚上传的文件，帮我进行专利审核",
-  },
-  {
-    id: 5,
-    title: "IPC 分类指导",
-    icon: "Shield",
-    description: "根据技术方案选择合适的专利 IPC 分类号",
-    prompt:
-      "我有一个专利申请书，请帮我分析应该归入哪些 IPC 分类号，并说明每个分类号的含义和选择理由。",
-  },
-]);
 
 const settings = reactive({
   model: localStorage.getItem(AI_MODEL_STORAGE_KEY) || "qwen3:8b",
@@ -426,23 +410,6 @@ watch(
 );
 
 // Computed
-const primaryTemplates = computed(() =>
-  (Array.isArray(patentTemplates.value) ? patentTemplates.value : []).slice(
-    0,
-    3,
-  ),
-);
-const secondaryTemplates = computed(() =>
-  (Array.isArray(patentTemplates.value) ? patentTemplates.value : []).slice(3),
-);
-const placeholderPromptsItems = computed(() =>
-  [...primaryTemplates.value, ...secondaryTemplates.value].map((t) => ({
-    key: String(t.id),
-    label: t.title,
-    description: t.description || "",
-  })),
-);
-const placeholderPromptsStyles = { list: { width: "100%" }, item: { flex: 1 } };
 const conversationsItems = computed(() =>
   (Array.isArray(chatSessions.value) ? chatSessions.value : []).map(
     (session) => {
@@ -472,19 +439,32 @@ const isSendDisabled = computed(
 
 // Methods
 const conversationMenu = (conversation) => ({
-  items: [{ key: "delete", label: "删除" }],
+  items: [
+    { key: "rename", label: "重命名" },
+    { key: "delete", label: "删除" },
+  ],
   onClick: ({ key, domEvent }) => {
-    if (key === "delete") deleteSession(Number(conversation.key), domEvent);
+    if (key === "delete") {
+      deleteSession(Number(conversation.key), domEvent);
+    } else if (key === "rename") {
+      const session = chatSessions.value.find(
+        (s) => String(s.id) === conversation.key,
+      );
+      if (session) {
+        const newTitle = prompt("请输入新的会话标题:", session.title);
+        if (newTitle && newTitle.trim() && newTitle.trim() !== session.title) {
+          renameSession(Number(conversation.key), newTitle.trim());
+        }
+      }
+    }
   },
 });
 
 const onPromptsItemClick = (info) => {
   const key = info?.data?.key;
-  const template = (patentTemplates.value || []).find(
-    (t) => String(t.id) === String(key),
-  );
+  const template = getTemplateById(key);
   if (template) {
-    currentTemplateId.value = Number(template.id);
+    selectTemplate(template.id);
     inputMessage.value =
       template.id === 1 || template.id === 3 ? "" : template.prompt || "";
     sendMessage();
@@ -507,25 +487,6 @@ const renderSenderActions = (_ori, { components }) => {
   return h(components.SendButton, { disabled: isSendDisabled.value });
 };
 
-const normalizeAiErrorMessage = (rawMessage) => {
-  const text = String(rawMessage || "").trim();
-  if (!text) return "抱歉，AI 服务暂时不可用，请稍后重试。";
-  if (
-    text.includes("Ollama API 调用失败") ||
-    text.includes("Ollama API 错误") ||
-    text.includes("502")
-  ) {
-    return "抱歉，AI 服务暂时不可用，请稍后重试。";
-  }
-  if (text.includes("模型配置或请求参数错误")) {
-    return "抱歉，模型配置或请求参数错误，请联系管理员检查模型配置。";
-  }
-  if (text.includes("无法连接到 Ollama 服务")) {
-    return "抱歉，无法连接 AI 服务，请稍后重试。";
-  }
-  return text;
-};
-
 const sendMessage = async () => {
   if (isLoading.value) return;
   if (!isAttachmentsReady.value) {
@@ -541,23 +502,9 @@ const sendMessage = async () => {
   const hasAttachments = uploadedFiles.value.length > 0;
   if (!hasText && !hasAttachments) return;
 
-  const isIPC = Number(currentTemplateId.value) === 5;
-  const isStrictAudit =
-    Number(currentTemplateId.value) === 1 ||
-    Number(currentTemplateId.value) === 3;
-  const isPureAttachment = !hasText && hasAttachments;
-
-  const messageContent = hasText
-    ? trimmed
-    : isIPC
-      ? "请根据我上传的专利文档内容，帮我进行 IPC 分类，并说明每个分类号的含义和选择理由。"
-      : isStrictAudit
-        ? ""
-        : "请根据我刚刚上传的专利文档，先给出整体概览、关键创新点和主要风险点的审核意见。";
-  const displayContent =
-    isPureAttachment && isStrictAudit
-      ? "（已上传文档，按模板审核）"
-      : messageContent;
+  const templateId = activeTemplateId.value;
+  const messageContent = buildMessageContent(templateId, hasText, trimmed);
+  const displayContent = buildDisplayContent(templateId, hasText, hasAttachments, messageContent);
   const attachments = hasAttachments ? [...uploadedFiles.value] : null;
 
   messages.value.push({
@@ -566,38 +513,32 @@ const sendMessage = async () => {
     fullContent: messageContent,
     timestamp: new Date(),
     attachments,
-    templateId:
-      currentTemplateId.value != null ? Number(currentTemplateId.value) : null,
+    templateId: templateId != null ? Number(templateId) : null,
   });
   inputMessage.value = "";
   uploadedFiles.value = [];
   attachmentsOpen.value = false;
   attachmentItems.value = [];
 
-  // 获取第一个附件的 document_id
   const documentId =
     attachments && attachments.length > 0 ? attachments[0]?.id || null : null;
   await generateAIResponse(
     messageContent,
     attachments,
-    currentTemplateId.value != null
-      ? { templateId: Number(currentTemplateId.value), documentId }
-      : isPureAttachment
-        ? { forceAudit: true, documentId }
-        : { documentId },
+    templateId != null
+      ? { templateId: Number(templateId), documentId }
+      : { documentId },
   );
-  currentTemplateId.value = null;
+  clearTemplateSelection();
 };
 
 const generateAIResponse = async (message, attachments, options = {}) => {
-  isLoading.value = true;
-  currentResponse.value = "";
   const { templateId = null, documentId = null } = options;
+  currentResponse.value = "";
 
   try {
-    const isIPC = Number(templateId) === 5;
-    const isStrictTemplate =
-      Number(templateId) === 1 || Number(templateId) === 3;
+    const isIPC = isIPCTemplate(templateId);
+    const strict = isStrictTemplate(templateId);
 
     let userMessage = message;
     if (attachments && attachments.length > 0) {
@@ -616,27 +557,17 @@ const generateAIResponse = async (message, attachments, options = {}) => {
     }
 
     const contextMessages =
-      isIPC || isStrictTemplate
+      isIPC || strict
         ? []
         : messages.value
             .filter((m) => m.role === "user" || m.role === "assistant")
-            .slice(-12)
             .map((m) => {
               const content = m.content || "";
               return { role: m.role, content };
             });
 
-    const apiUrl = "/api/ai/chat";
-    const headers = {
-      "Content-Type": "application/json",
-      Accept: "text/event-stream, application/json;q=0.9, */*;q=0.8",
-      "Cache-Control": "no-cache",
-    };
-    const token = localStorage.getItem("token");
-    if (token) headers.Authorization = `Bearer ${token}`;
-
     const body = {
-      messages: isStrictTemplate
+      messages: strict
         ? [...contextMessages, { role: "user", content: userMessage }]
         : [
             { role: "system", content: "你是一个专业的专利审核助手" },
@@ -647,91 +578,19 @@ const generateAIResponse = async (message, attachments, options = {}) => {
       model: settings.model || "qwen3:8b",
       passthrough: false,
     };
-    if (isStrictTemplate) body.template_id = Number(templateId);
+    if (strict) body.template_id = Number(templateId);
     if (currentBackendSessionId.value)
       body.session_id = currentBackendSessionId.value;
     if (documentId) body.document_id = documentId;
 
-    const controller = new AbortController();
-    currentController.value = controller;
-    const response = await fetch(apiUrl, {
-      method: "POST",
-      headers,
-      body: JSON.stringify(body),
-      signal: controller.signal,
-    });
+    const result = await startStream(body);
 
-    if (!response.ok) throw new Error(`AI 服务响应失败: ${response.status}`);
-
-    if (response.body) {
-      const reader = response.body.getReader();
-      const decoder = new TextDecoder();
-      let buffer = "";
-      let currentEvent = "message";
-      let currentData = "";
-      let streamError = "";
-      currentThinking.value = "";
-      currentAnswer.value = "";
-
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-        buffer += decoder.decode(value, { stream: true });
-
-        // 处理 SSE 格式：多行组成一个事件
-        while (buffer.includes("\n")) {
-          const newlineIndex = buffer.indexOf("\n");
-          const line = buffer.substring(0, newlineIndex);
-          buffer = buffer.substring(newlineIndex + 1);
-
-          // 空行表示事件结束
-          if (line.trim() === "") {
-            if (currentData === "[DONE]") break;
-
-            if (currentData) {
-              try {
-                const parsed = JSON.parse(currentData);
-                if (parsed?.choices?.[0]?.delta) {
-                  const delta = parsed.choices[0].delta;
-                  if (currentEvent === "error") {
-                    streamError = normalizeAiErrorMessage(delta.content);
-                  } else {
-                    if (delta.thinking) currentThinking.value += delta.thinking;
-                    if (delta.content) currentAnswer.value += delta.content;
-                  }
-                }
-              } catch {
-                // 忽略非 JSON 片段，继续读取后续 SSE 数据
-              }
-            }
-            currentEvent = "message";
-            currentData = "";
-            continue;
-          }
-
-          // 解析 SSE 行
-          if (line.startsWith("event:")) {
-            currentEvent = line.slice(6).trim();
-          } else if (line.startsWith("data:")) {
-            currentData = line.slice(5);
-          }
-        }
-      }
-
-      if (streamError) {
-        currentThinking.value = "";
-        currentAnswer.value = streamError;
-      }
-    }
-
-    // 组装完整响应
-    currentResponse.value =
-      currentThinking.value + "\n\n" + currentAnswer.value;
+    currentResponse.value = result.thinking + "\n\n" + result.answer;
 
     messages.value.push({
       role: "assistant",
-      content: currentAnswer.value || "抱歉，没有收到有效的响应。",
-      thinking: currentThinking.value,
+      content: result.answer || "抱歉，没有收到有效的响应。",
+      thinking: result.thinking,
       timestamp: new Date(),
       thinkingExpanded: streamingThinkingExpanded.value,
     });
@@ -758,11 +617,7 @@ const generateAIResponse = async (message, attachments, options = {}) => {
       });
     }
   } finally {
-    isLoading.value = false;
-    currentResponse.value = "";
-    currentThinking.value = "";
-    currentAnswer.value = "";
-    currentController.value = null;
+    resetStream();
   }
 };
 
@@ -848,7 +703,7 @@ const regenerateResponse = async (index) => {
 // Mounted
 onMounted(async () => {
   inputMessage.value = "";
-  currentTemplateId.value = null;
+  clearTemplateSelection();
   await loadSessions();
   loadUploadedFiles();
   document.addEventListener("click", stopLoadingClickHandler, true);
@@ -860,8 +715,7 @@ const stopLoadingClickHandler = (e) => {
       ".ant-sender-actions-btn-loading-icon, .ant-sender-send-button, .send-btn",
     );
     if (el) {
-      currentController.value.abort();
-      currentController.value = null;
+      abort();
       isLoading.value = false;
     }
   }

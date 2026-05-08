@@ -152,7 +152,9 @@ onMounted(() => {
   box-shadow: none;
   border: 1px solid var(--border-color);
   background-color: var(--bg-secondary);
-  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease;
 }
 
 .login-card :deep(.el-input__wrapper:hover) {

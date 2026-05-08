@@ -2,7 +2,7 @@
 规则检索服务 - 负责检索和匹配专利审核规则
 """
 from typing import Dict, Any, List, Optional
-from app.prompts.rules.loader import load_rules, format_rules_as_prompt, get_rules_for_template
+from app.prompts.rules.loader import load_rules, get_rules_for_template
 
 
 class RuleRetriever:

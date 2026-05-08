@@ -26,6 +26,7 @@ async def get_redis() -> redis.Redis:
             port=int(os.getenv("REDIS_PORT", "6379")),
             db=REDIS_DB,
             decode_responses=True,
+            max_connections=REDIS_POOL_MAX_CONN,
         )
     return _redis_client
 

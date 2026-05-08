@@ -3,7 +3,7 @@ import re
 import logging
 import asyncio
 from concurrent.futures import ThreadPoolExecutor
-from typing import Dict, Any, Optional
+from typing import Dict, Any, Optional, Callable
 from pathlib import Path
 import docx
 import pdfplumber
@@ -188,11 +188,31 @@ class PatentDocumentParser:
             ]
         }
 
-    async def parse_document(self, file_path: str, file_type: str) -> Dict[str, Any]:
-        """解析专利文档"""
+    async def parse_document(
+        self,
+        file_path: str,
+        file_type: str,
+        progress_callback: Optional[Callable[[str, int, str], None]] = None
+    ) -> Dict[str, Any]:
+        """解析专利文档
+
+        Args:
+            file_path: 文件路径
+            file_type: 文件类型 (docx, doc, pdf)
+            progress_callback: 进度回调函数，接受 (stage, percent, message) 参数
+        """
+        def report_progress(stage: str, percent: int, message: str):
+            if progress_callback:
+                try:
+                    progress_callback(stage, percent, message)
+                except Exception as e:
+                    logger.warning(f"进度回调失败: {e}")
+
         try:
             logger.info(f"开始解析文档: {file_path}, 类型: {file_type}")
 
+            # 阶段1: 提取文本
+            report_progress("extracting_text", 10, "正在提取文件文本内容...")
             if file_type.lower() == 'docx':
                 parse_result = await self._parse_docx(file_path)
             elif file_type.lower() == 'doc':
@@ -202,19 +222,31 @@ class PatentDocumentParser:
             else:
                 raise ValueError(f"不支持的文件类型: {file_type}")
 
+            # 阶段2: 分析结构
+            report_progress("analyzing_structure", 40, "正在分析文档结构...")
             content = parse_result.get('full_content', '')
             first_page = parse_result.get('first_page_content', '')
+
+            # 阶段3: 提取章节
+            report_progress("extracting_sections", 70, "正在提取专利章节信息...")
             structured = self._extract_structured_content(content)
 
+            # 阶段4: 评估质量
+            report_progress("assessing_quality", 90, "正在评估解析质量...")
+            sections_info = self._get_sections_info(structured)
+
             logger.info("文档解析完成")
+            report_progress("complete", 100, "文档解析已完成")
+
             return {
                 'raw_content': content,
                 'first_page_content': first_page,
                 'structured': structured,
-                'sections': self._get_sections_info(structured)
+                'sections': sections_info
             }
         except Exception as e:
             logger.error(f"文档解析失败: {str(e)}")
+            report_progress("error", 0, f"解析失败: {str(e)}")
             raise
 
     async def _parse_docx(self, file_path: str) -> Dict[str, str]:

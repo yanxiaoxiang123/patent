@@ -26,7 +26,11 @@ export const uploadDocument = async (
   formData: FormData,
 ): Promise<DocumentItem> => {
   const token = localStorage.getItem("token");
-  const authHeader = token ? (token.startsWith("Bearer ") ? token : `Bearer ${token}`) : undefined;
+  const authHeader = token
+    ? token.startsWith("Bearer ")
+      ? token
+      : `Bearer ${token}`
+    : undefined;
   const response = (await api.post("/documents/upload", formData, {
     headers: {
       "Content-Type": "multipart/form-data",
@@ -54,4 +58,74 @@ export const downloadDocument = async (id: number): Promise<Blob> => {
     responseType: "blob",
   });
   return response as unknown as Blob;
+};
+
+export interface ParseProgress {
+  stage: string;
+  percent: number;
+  message: string;
+  result?: {
+    document_id: number;
+    status: string;
+    quality?: string;
+  };
+}
+
+export type ParseProgressCallback = (progress: ParseProgress) => void;
+
+let currentEventSource: EventSource | null = null;
+
+/**
+ * Parse document with SSE stream for real-time progress updates
+ * Uses EventSource with token as query parameter (EventSource doesn't support custom headers)
+ */
+export const parseDocumentStream = (
+  documentId: number,
+  onProgress: ParseProgressCallback,
+): EventSource => {
+  // Close any existing connection
+  if (currentEventSource) {
+    currentEventSource.close();
+  }
+
+  const token = localStorage.getItem("token");
+  // EventSource doesn't support custom headers, so we pass token as query param
+  const url = token
+    ? `/api/documents/${documentId}/parse/stream?token=${encodeURIComponent(token)}`
+    : `/api/documents/${documentId}/parse/stream`;
+
+  const eventSource = new EventSource(url);
+  currentEventSource = eventSource;
+
+  eventSource.addEventListener("progress", (event) => {
+    try {
+      const data = JSON.parse(event.data) as ParseProgress;
+      onProgress(data);
+    } catch (e) {
+      console.error("Failed to parse progress event:", e);
+    }
+  });
+
+  eventSource.addEventListener("done", () => {
+    eventSource.close();
+    currentEventSource = null;
+  });
+
+  eventSource.addEventListener("error", (event) => {
+    console.error("SSE error:", event);
+    eventSource.close();
+    currentEventSource = null;
+  });
+
+  return eventSource;
+};
+
+/**
+ * Close the current SSE connection
+ */
+export const closeParseDocumentStream = (): void => {
+  if (currentEventSource) {
+    currentEventSource.close();
+    currentEventSource = null;
+  }
 };

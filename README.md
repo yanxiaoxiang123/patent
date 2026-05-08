@@ -186,6 +186,29 @@ Nginx :80 → Frontend (static files)
 Nginx /api → Uvicorn :8000 (backend)
 ```
 
+## Performance Optimizations
+
+### Frontend
+
+- **SSE Batch Rendering**: 50ms throttle on `useSSEStream`, reducing Vue reactivity triggers from ~1000/response to ~20/s
+- **Code Splitting**: `SimplePatentChat.vue` reduced 1204→1042 lines via extraction of `useSSEStream`, `useTemplateSelector`, and `ContentPreviewDialog`
+- **Conversation History**: N+1 query eliminated -- backend JOINs document info in batch, frontend no longer makes extra API call per session
+- **No Message Limit**: Removed the `.slice(-12)` constraint, full conversation history sent to AI
+
+### Backend
+
+- **Ollama Streaming**: Per-chunk read timeout (30s) prevents hanging connections; `keep_alive` reduced 24h→5m (OLLAMA_KEEP_ALIVE env)
+- **Database Pool**: `pool_size` 5→10, `pool_timeout` 30s added; Redis `max_connections`=10
+- **Dead Code**: Removed `ai_adapter.py`, duplicate `format_rules_as_prompt` (~230 lines), unused frontend components (~2,500 lines)
+- **Error Visibility**: `logger.exception()` replaces flat `logger.error()` for chat persistence failures, including full stack traces
+
+## Test Accounts
+
+| Username | Password | Role |
+|----------|----------|------|
+| `yan` | `123456` | user |
+| `admin` | `admin123` | admin |
+
 ## Contributing
 
 Contributions are welcome. Please open an issue to discuss proposed changes before submitting a pull request.

@@ -17,7 +17,9 @@ api.interceptors.request.use(
     const authStore = useAuthStore();
     const token = authStore.token || localStorage.getItem("token");
     if (token) {
-      const authHeader = token.startsWith("Bearer ") ? token : `Bearer ${token}`;
+      const authHeader = token.startsWith("Bearer ")
+        ? token
+        : `Bearer ${token}`;
       config.headers.Authorization = authHeader;
     }
     return config;

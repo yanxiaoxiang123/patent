@@ -25,7 +25,7 @@ async def upsert_user(username: str, password: str, role: str) -> None:
         )
 
 
-async def fetch_users(usernames: list[str]) -> list[dict]:
+async def fetch_users(usernames: list) -> list:
     stmt = text(
         """
         SELECT id, username, role, created_at, updated_at

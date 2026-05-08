@@ -6,6 +6,13 @@ from typing import List, Optional, AsyncGenerator, Dict, Any
 import httpx
 from pydantic import BaseModel
 
+import os
+from dotenv import load_dotenv
+
+load_dotenv()
+
+OLLAMA_KEEP_ALIVE = os.getenv("OLLAMA_KEEP_ALIVE", "5m")
+
 from app.core.config import OLLAMA_MODEL, OLLAMA_URLS
 
 logger = logging.getLogger(__name__)
@@ -263,7 +270,7 @@ def _build_payload(
         "top_p": top_p,
         "num_ctx": 32768,
         "max_tokens": final_max_tokens,
-        "keep_alive": "24h",
+        "keep_alive": OLLAMA_KEEP_ALIVE,
         "repeat_penalty": repeat_penalty,
     }
 
@@ -304,7 +311,7 @@ async def get_ollama_response_stream(
     temperature, top_p = get_temperature(is_strict_template)
 
     try:
-        async with httpx.AsyncClient(timeout=300.0) as client:
+        async with httpx.AsyncClient(timeout=httpx.Timeout(connect=10, read=30, write=10, pool=10)) as client:
             last_error: Optional[Exception] = None
             for base_url in get_ollama_base_urls():
                 plans = [(prefer_chat, False), (prefer_chat, True)]
@@ -364,7 +371,7 @@ async def get_ollama_response(
     repeat_penalty = 1.1 if is_strict_template else 1.0
 
     try:
-        async with httpx.AsyncClient(timeout=300.0) as client:
+        async with httpx.AsyncClient(timeout=httpx.Timeout(connect=10, read=30, write=10, pool=10)) as client:
             last_error: Optional[Exception] = None
             for base_url in get_ollama_base_urls():
                 plans = [(prefer_chat, False), (prefer_chat, True)]

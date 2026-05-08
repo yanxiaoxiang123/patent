@@ -16,6 +16,8 @@
 
 <script setup lang="ts">
 import { computed } from "vue";
+import { ElMessage } from "element-plus";
+import type { FileAttachment } from "@/types";
 
 interface Props {
   modelValue: boolean;
@@ -24,7 +26,7 @@ interface Props {
 }
 
 const props = withDefaults(defineProps<Props>(), {
-  title: "文件预览",
+  title: "",
   content: "",
 });
 
@@ -40,6 +42,8 @@ const visible = computed({
 const handleClose = () => {
   emit("update:modelValue", false);
 };
+
+defineExpose({});
 </script>
 
 <style scoped>
@@ -60,22 +64,5 @@ const handleClose = () => {
   line-height: 1.6;
   color: #334155;
   margin: 0;
-}
-
-.preview-content::-webkit-scrollbar {
-  width: 6px;
-}
-
-.preview-content::-webkit-scrollbar-track {
-  background: transparent;
-}
-
-.preview-content::-webkit-scrollbar-thumb {
-  background: rgba(148, 163, 184, 0.3);
-  border-radius: 3px;
-}
-
-.preview-content::-webkit-scrollbar-thumb:hover {
-  background: rgba(148, 163, 184, 0.5);
 }
 </style>

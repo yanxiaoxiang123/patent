@@ -15,7 +15,7 @@ export const useAuthStore = defineStore("auth", () => {
   // 登录
   const login = async (form: LoginForm) => {
     const response = await loginApi(form);
-    const { access_token, user: userData } = response;
+    const { access_token, user: userData } = response.data || response;
 
     token.value = access_token;
     user.value = userData;
@@ -43,9 +43,13 @@ export const useAuthStore = defineStore("auth", () => {
 
   // 初始化用户信息
   const initUser = () => {
-    const savedUser = localStorage.getItem("user");
-    if (savedUser) {
-      user.value = JSON.parse(savedUser);
+    try {
+      const savedUser = localStorage.getItem("user");
+      if (savedUser && savedUser !== "undefined") {
+        user.value = JSON.parse(savedUser);
+      }
+    } catch {
+      localStorage.removeItem("user");
     }
   };
 

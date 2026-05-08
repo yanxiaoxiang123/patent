@@ -18,10 +18,7 @@
     <!-- 气泡内容 -->
     <div class="bubble-content">
       <!-- 头部信息 -->
-      <MessageHeader
-        :role="role"
-        :timestamp="timestamp"
-      />
+      <MessageHeader :role="role" :timestamp="timestamp" />
 
       <!-- 思考过程 -->
       <MessageThinking
@@ -58,48 +55,48 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
-import { UserOutlined, RobotOutlined } from '@ant-design/icons-vue'
-import MessageHeader from './MessageHeader.vue'
-import MessageThinking from './MessageThinking.vue'
-import MessageContent from './MessageContent.vue'
-import MessageAttachments from './MessageAttachments.vue'
-import MessageActions from './MessageActions.vue'
-import type { FileAttachment } from '@/types'
+import { computed } from "vue";
+import { UserOutlined, RobotOutlined } from "@ant-design/icons-vue";
+import MessageHeader from "./MessageHeader.vue";
+import MessageThinking from "./MessageThinking.vue";
+import MessageContent from "./MessageContent.vue";
+import MessageAttachments from "./MessageAttachments.vue";
+import MessageActions from "./MessageActions.vue";
+import type { FileAttachment } from "@/types";
 
 interface Props {
-  role: 'user' | 'ai' | 'assistant'
-  content: string
-  timestamp?: Date | string
-  isStreaming?: boolean
-  thinkingContent?: string
-  answerContent?: string
-  attachments?: FileAttachment[]
-  messageId?: string | number
-  showActions?: boolean
-  thinkingExpanded?: boolean
+  role: "user" | "ai" | "assistant";
+  content: string;
+  timestamp?: Date | string;
+  isStreaming?: boolean;
+  thinkingContent?: string;
+  answerContent?: string;
+  attachments?: FileAttachment[];
+  messageId?: string | number;
+  showActions?: boolean;
+  thinkingExpanded?: boolean;
 }
 
 const props = withDefaults(defineProps<Props>(), {
-  role: 'user',
-  content: '',
+  role: "user",
+  content: "",
   timestamp: () => new Date(),
   isStreaming: false,
   showActions: true,
   messageId: () => Date.now(),
-})
+});
 
 const emit = defineEmits<{
-  'toggle-thinking': []
-  'copy': [content: string]
-  'regenerate': []
-  'quote': [content: string]
-  'preview': [file: FileAttachment]
-}>()
+  "toggle-thinking": [];
+  copy: [content: string];
+  regenerate: [];
+  quote: [content: string];
+  preview: [file: FileAttachment];
+}>();
 
 const handleCopy = async () => {
-  emit('copy', props.content)
-}
+  emit("copy", props.content);
+};
 </script>
 
 <style scoped>

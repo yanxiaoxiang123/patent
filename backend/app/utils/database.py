@@ -1,5 +1,5 @@
 """数据库模块"""
-from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, create_async_engine
+from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 from contextlib import asynccontextmanager
@@ -18,8 +18,9 @@ engine = create_async_engine(
     echo=os.getenv("DEBUG", "false").lower() == "true",
     pool_recycle=3600,
     pool_pre_ping=True,
-    pool_size=5,
-    max_overflow=10,
+    pool_size=10,
+    max_overflow=20,
+    pool_timeout=30,
 )
 
 # 创建异步会话工厂

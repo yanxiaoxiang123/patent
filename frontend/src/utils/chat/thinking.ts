@@ -15,7 +15,9 @@ export interface SplitOptions {
 /**
  * 检查内容是否包含思考过程结构
  */
-export function hasThinkingStructure(content: string | null | undefined): boolean {
+export function hasThinkingStructure(
+  content: string | null | undefined,
+): boolean {
   if (!content || typeof content !== "string") return false;
 
   const thinkingLabels = [
@@ -37,7 +39,7 @@ export function hasThinkingStructure(content: string | null | undefined): boolea
  */
 export function splitThinking(
   content: string | null | undefined,
-  options: SplitOptions = {}
+  options: SplitOptions = {},
 ): ThinkingParts {
   if (!content || typeof content !== "string") {
     return {
@@ -135,7 +137,10 @@ export function splitThinking(
 /**
  * 确保内容包含思考过程结构（如果需要）
  */
-export function ensureThinkingStructure(content: string, options: any = {}): string {
+export function ensureThinkingStructure(
+  content: string,
+  options: any = {},
+): string {
   if (!content || typeof content !== "string") return content || "";
   if (hasThinkingStructure(content)) return content;
   return content;

@@ -66,7 +66,12 @@
 
   <!-- 复制成功提示 -->
   <Transition name="fade">
-    <div v-if="showCopySuccess" class="copy-success-tip" role="status" aria-live="polite">
+    <div
+      v-if="showCopySuccess"
+      class="copy-success-tip"
+      role="status"
+      aria-live="polite"
+    >
       <CheckCircleOutlined />
       已复制到剪贴板
     </div>
@@ -74,8 +79,8 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
-import { ElMessage } from 'element-plus'
+import { ref } from "vue";
+import { ElMessage } from "element-plus";
 import {
   CopyOutlined,
   RedoOutlined,
@@ -83,43 +88,43 @@ import {
   StarOutlined,
   FlagOutlined,
   CheckCircleOutlined,
-} from '@ant-design/icons-vue'
+} from "@ant-design/icons-vue";
 
 const emit = defineEmits<{
-  'copy': [content: string]
-  'regenerate': []
-  'quote': [content: string]
-}>()
+  copy: [content: string];
+  regenerate: [];
+  quote: [content: string];
+}>();
 
-const showCopySuccess = ref(false)
+const showCopySuccess = ref(false);
 
 const handleCopy = () => {
   // 通知父组件处理复制
-  emit('copy', '')
-}
+  emit("copy", "");
+};
 
 const handleMoreAction = (command: string) => {
   switch (command) {
-    case 'collect':
-      ElMessage.success('已收藏')
-      break
-    case 'report':
-      ElMessage.info('举报功能开发中')
-      break
+    case "collect":
+      ElMessage.success("已收藏");
+      break;
+    case "report":
+      ElMessage.info("举报功能开发中");
+      break;
   }
-}
+};
 
 // 父组件调用此方法显示复制成功
 const showCopySuccessTip = () => {
-  showCopySuccess.value = true
+  showCopySuccess.value = true;
   setTimeout(() => {
-    showCopySuccess.value = false
-  }, 2000)
-}
+    showCopySuccess.value = false;
+  }, 2000);
+};
 
 defineExpose({
   showCopySuccessTip,
-})
+});
 </script>
 
 <style scoped>

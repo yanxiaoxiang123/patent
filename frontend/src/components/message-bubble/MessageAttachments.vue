@@ -24,7 +24,7 @@
           role="status"
           aria-live="polite"
         >
-          {{ file.error ? '解析失败' : file.parsed ? '已解析' : '解析中' }}
+          {{ file.error ? "解析失败" : file.parsed ? "已解析" : "解析中" }}
         </el-tag>
       </div>
       <div v-if="file.parsed && canPreview(file)" class="attachment-preview">
@@ -46,46 +46,51 @@
 </template>
 
 <script setup lang="ts">
-import { FileOutlined, FilePdfOutlined, FileWordOutlined, EyeOutlined } from '@ant-design/icons-vue'
-import type { FileAttachment } from '@/types'
+import {
+  FileOutlined,
+  FilePdfOutlined,
+  FileWordOutlined,
+  EyeOutlined,
+} from "@ant-design/icons-vue";
+import type { FileAttachment } from "@/types";
 
 interface Props {
-  attachments: FileAttachment[]
+  attachments: FileAttachment[];
 }
 
-const props = defineProps<Props>()
+const props = defineProps<Props>();
 
 defineEmits<{
-  'preview': [file: FileAttachment]
-}>()
+  preview: [file: FileAttachment];
+}>();
 
 const getFileIcon = (filename: string) => {
-  const ext = filename.split('.').pop()?.toLowerCase()
-  if (ext === 'pdf') return FilePdfOutlined
-  if (['doc', 'docx'].includes(ext || '')) return FileWordOutlined
-  return FileOutlined
-}
+  const ext = filename.split(".").pop()?.toLowerCase();
+  if (ext === "pdf") return FilePdfOutlined;
+  if (["doc", "docx"].includes(ext || "")) return FileWordOutlined;
+  return FileOutlined;
+};
 
 const getFileIconClass = (filename: string) => {
-  const ext = filename.split('.').pop()?.toLowerCase()
-  if (ext === 'pdf') return 'icon-pdf'
-  if (['doc', 'docx'].includes(ext || '')) return 'icon-word'
-  return 'icon-default'
-}
+  const ext = filename.split(".").pop()?.toLowerCase();
+  if (ext === "pdf") return "icon-pdf";
+  if (["doc", "docx"].includes(ext || "")) return "icon-word";
+  return "icon-default";
+};
 
 const getFileType = (filename: string) => {
-  const ext = filename.split('.').pop()?.toLowerCase()
+  const ext = filename.split(".").pop()?.toLowerCase();
   const types: Record<string, string> = {
-    pdf: 'PDF',
-    doc: 'DOC',
-    docx: 'DOCX',
-  }
-  return types[ext || ''] || '文档'
-}
+    pdf: "PDF",
+    doc: "DOC",
+    docx: "DOCX",
+  };
+  return types[ext || ""] || "文档";
+};
 
 const canPreview = (file: FileAttachment) => {
-  return !!(file.parsedContent || file.parsed_content)
-}
+  return !!(file.parsedContent || file.parsed_content);
+};
 </script>
 
 <style scoped>

@@ -1,14 +1,12 @@
 <template>
   <div class="message-thinking" :class="{ expanded: isExpanded }">
     <!-- 思考过程切换按钮 -->
-    <button
-      v-if="hasThinking"
-      class="thinking-toggle"
-      @click="toggleExpand"
-    >
+    <button v-if="hasThinking" class="thinking-toggle" @click="toggleExpand">
       <div class="thinking-toggle-header">
         <BulbOutlined class="thinking-icon" />
-        <span class="thinking-title">{{ isExpanded ? '收起思考过程' : '思考过程' }}</span>
+        <span class="thinking-title">{{
+          isExpanded ? "收起思考过程" : "思考过程"
+        }}</span>
         <DownOutlined class="toggle-arrow" />
       </div>
     </button>
@@ -17,60 +15,60 @@
     <Transition name="thinking-slide">
       <div v-show="isExpanded && hasThinking" class="thinking-panel">
         <!-- 思考内容 -->
-        <MarkdownRender
-          :content="thinkingText"
-          class="thinking-content"
-        />
+        <MarkdownRender :content="thinkingText" class="thinking-content" />
       </div>
     </Transition>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch } from 'vue'
-import { BulbOutlined, DownOutlined } from '@ant-design/icons-vue'
-import MarkdownRender from 'markstream-vue'
+import { ref, computed, watch } from "vue";
+import { BulbOutlined, DownOutlined } from "@ant-design/icons-vue";
+import MarkdownRender from "markstream-vue";
 
 interface Props {
-  thinkingContent?: string
-  answerContent?: string
-  isStreaming?: boolean
+  thinkingContent?: string;
+  answerContent?: string;
+  isStreaming?: boolean;
 }
 
 const props = withDefaults(defineProps<Props>(), {
-  thinkingContent: '',
-  answerContent: '',
+  thinkingContent: "",
+  answerContent: "",
   isStreaming: false,
-})
+});
 
 const emit = defineEmits<{
-  'toggle': []
-}>()
+  toggle: [];
+}>();
 
 // 判断是否有思考内容
 const hasThinking = computed(() => {
-  return !!(props.thinkingContent && props.thinkingContent.trim())
-})
+  return !!(props.thinkingContent && props.thinkingContent.trim());
+});
 
 // 思考内容文本
 const thinkingText = computed(() => {
-  return props.thinkingContent || ''
-})
+  return props.thinkingContent || "";
+});
 
 // 展开状态 - 有思考内容时默认展开
-const isExpanded = ref(true)
+const isExpanded = ref(true);
 
 // 监听流式状态
-watch(() => props.isStreaming, (streaming) => {
-  if (streaming) {
-    isExpanded.value = true
-  }
-})
+watch(
+  () => props.isStreaming,
+  (streaming) => {
+    if (streaming) {
+      isExpanded.value = true;
+    }
+  },
+);
 
 const toggleExpand = () => {
-  isExpanded.value = !isExpanded.value
-  emit('toggle')
-}
+  isExpanded.value = !isExpanded.value;
+  emit("toggle");
+};
 </script>
 
 <style scoped>

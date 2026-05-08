@@ -100,7 +100,10 @@ export function useFileUpload() {
             fileItem.parsingThinkingSteps[1].status = "completed";
             fileItem.parsingThinkingSteps[2].status = "completed";
           }
-          if (parsedResult?.status === "parsed" && parsedResult.parsed_content) {
+          if (
+            parsedResult?.status === "parsed" &&
+            parsedResult.parsed_content
+          ) {
             fileItem.parsed = true;
             fileItem.parsedContent = parsedResult.parsed_content;
             fileItem.error = false;
@@ -122,7 +125,9 @@ export function useFileUpload() {
           ElMessage.error("文档解析失败，请检查文件内容或稍后重试");
         }
 
-        const index = uploadedFiles.value.findIndex((f) => f.id === fileItem.id);
+        const index = uploadedFiles.value.findIndex(
+          (f) => f.id === fileItem.id,
+        );
         if (index !== -1) {
           uploadedFiles.value[index] = {
             ...uploadedFiles.value[index],
@@ -181,11 +186,11 @@ export function useFileUpload() {
     if (!uid) return true;
 
     attachmentItems.value = attachmentItems.value.filter(
-      (f) => String(f.uid) !== String(uid)
+      (f) => String(f.uid) !== String(uid),
     );
 
     const index = uploadedFiles.value.findIndex(
-      (f) => String(f.id) === String(uid) || String(f.uid) === String(uid)
+      (f) => String(f.id) === String(uid) || String(f.uid) === String(uid),
     );
     if (index !== -1) {
       uploadedFiles.value.splice(index, 1);
@@ -204,7 +209,7 @@ export function useFileUpload() {
         (f) =>
           String(f.id) === String(item.docId) ||
           String(f.id) === String(item.response?.id) ||
-          String(f.uid) === String(item.uid)
+          String(f.uid) === String(item.uid),
       );
       if (!matched) return item;
       return {
@@ -253,7 +258,11 @@ export function useFileUpload() {
         uid: String(file.id),
         name: file.name,
         status: file.error ? "error" : "done",
-        description: file.error ? "解析失败" : file.parsed ? "已解析" : "解析中...",
+        description: file.error
+          ? "解析失败"
+          : file.parsed
+            ? "已解析"
+            : "解析中...",
         docId: file.id,
       }));
     } catch (e) {

@@ -10,7 +10,7 @@ import type { ThinkingParts } from "@/utils/chat/thinking";
 export function useThinking() {
   // 思考过程展开状态（按消息索引）
   const thinkingExpanded = ref<Record<number, boolean>>({});
-  
+
   // 流式响应中的思考过程展开状态
   const streamingThinkingExpanded = ref(true);
 
