@@ -71,7 +71,7 @@ function onActiveChange(key: string) {
   position: fixed;
   top: 0;
   left: 0;
-  width: 280px;
+  width: 300px;
   height: 100vh;
   background: var(--bg-primary);
   border-right: 1px solid var(--border-color);
@@ -83,39 +83,54 @@ function onActiveChange(key: string) {
 }
 
 .sidebar-header {
-  padding: 12px;
-  border-bottom: 1px solid var(--border-light);
+  padding: 16px;
+  border-bottom: 1px solid var(--border-color);
   display: flex;
   align-items: center;
 }
 
 .sidebar-title {
-  font-size: 14px;
+  font-size: 15px;
   font-weight: 600;
   color: var(--text-primary);
   flex: 1;
+  font-family: var(--font-display);
+}
+
+.sidebar-close-btn {
+  color: var(--text-muted);
+}
+
+.sidebar-close-btn:hover {
+  color: var(--primary-color);
+  background: var(--primary-pale);
 }
 
 .sidebar-add-btn {
+  margin: 12px 16px;
   color: var(--primary-color);
   font-weight: 500;
   font-size: 13px;
+  height: auto;
+  padding: 10px 14px;
+  border-radius: var(--radius-md);
+  transition: all 0.2s ease;
 }
 
 .sidebar-add-btn:hover {
-  background: rgba(37, 99, 235, 0.04);
+  background: var(--primary-pale);
 }
 
 .empty-sessions {
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: 32px;
+  padding: 40px;
   color: var(--text-muted);
 }
 
 .empty-sessions p {
-  margin-top: 12px;
+  margin-top: 14px;
   font-size: 13px;
 }
 
@@ -126,11 +141,12 @@ function onActiveChange(key: string) {
 }
 
 .ax-conversations :deep(.ax-conversations-item) {
-  padding: 8px 10px;
-  border-radius: var(--radius-sm);
-  margin-bottom: 2px;
-  transition: background 0.15s ease;
+  padding: 10px 12px;
+  border-radius: var(--radius-md);
+  margin-bottom: 4px;
+  transition: all 0.18s ease;
   cursor: pointer;
+  border: 1px solid transparent;
 }
 
 .ax-conversations :deep(.ax-conversations-item:hover) {
@@ -138,11 +154,12 @@ function onActiveChange(key: string) {
 }
 
 .ax-conversations :deep(.ax-conversations-item.active) {
-  background: rgba(37, 99, 235, 0.08);
+  background: var(--primary-pale);
+  border-color: var(--primary-light);
 }
 
 .ax-conversations :deep(.ax-conversations-item-title) {
-  font-size: 13px;
+  font-size: 13.5px;
   font-weight: 500;
   color: var(--text-primary);
   overflow: hidden;
@@ -158,7 +175,7 @@ function onActiveChange(key: string) {
 .ax-conversations :deep(.ax-conversations-item-meta) {
   font-size: 11px;
   color: var(--text-muted);
-  margin-top: 2px;
+  margin-top: 3px;
 }
 
 .ax-conversations :deep(.ax-conversations-item.active .ax-conversations-item-meta) {
@@ -166,11 +183,12 @@ function onActiveChange(key: string) {
 }
 
 .ax-conversations :deep(.ax-conversations-menu) {
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-lg);
 }
 
 .ax-conversations :deep(.ax-conversations-menu-item) {
   font-size: 13px;
-  padding: 6px 12px;
+  padding: 8px 14px;
 }
 </style>

@@ -102,40 +102,40 @@ const canPreview = (file: FileAttachment) => {
 }
 
 .attachment-card {
-  padding: 10px 12px;
-  background: rgba(248, 250, 252, 0.9);
-  border: 1px solid rgba(148, 163, 184, 0.2);
-  border-radius: 10px;
-  transition: all 0.2s ease;
+  padding: 12px 14px;
+  background: var(--bg-primary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  transition: all 0.18s ease;
 }
 
 .attachment-card:hover {
-  border-color: rgba(59, 130, 246, 0.3);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  border-color: var(--primary-light);
+  box-shadow: var(--shadow-sm);
 }
 
 .attachment-card.has-error {
-  border-color: rgba(239, 68, 68, 0.3);
-  background: rgba(254, 242, 242, 0.9);
+  border-color: #fca5a5;
+  background: #fef2f2;
 }
 
 .attachment-header {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 12px;
 }
 
 .attachment-icon {
   font-size: 22px;
-  color: #6b7280;
+  color: var(--text-muted);
 }
 
 .attachment-icon.icon-pdf {
-  color: #ef4444;
+  color: #dc2626;
 }
 
 .attachment-icon.icon-word {
-  color: #2563eb;
+  color: var(--primary-color);
 }
 
 .attachment-info {
@@ -147,7 +147,7 @@ const canPreview = (file: FileAttachment) => {
   display: block;
   font-size: 13px;
   font-weight: 500;
-  color: #374151;
+  color: var(--text-primary);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -155,12 +155,20 @@ const canPreview = (file: FileAttachment) => {
 
 .attachment-type {
   font-size: 11px;
-  color: #9ca3af;
+  color: var(--text-muted);
 }
 
 .attachment-preview {
-  margin-top: 8px;
-  padding-top: 8px;
-  border-top: 1px dashed #e5e7eb;
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px dashed var(--border-color);
+}
+
+.attachment-preview :deep(.el-button--text) {
+  color: var(--primary-color);
+}
+
+.attachment-preview :deep(.el-button--text:hover) {
+  color: var(--primary-hover);
 }
 </style>

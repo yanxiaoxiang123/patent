@@ -73,23 +73,26 @@ const toggleExpand = () => {
 
 <style scoped>
 .message-thinking {
-  margin-bottom: 10px;
+  margin-bottom: 12px;
 }
 
 .thinking-toggle {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  padding: 4px 8px;
-  background: var(--bg-tertiary);
-  border: 1px solid var(--border-color);
-  border-radius: var(--radius-sm);
+  padding: 5px 10px;
+  background: var(--primary-pale);
+  border: 1px solid var(--primary-light);
+  border-radius: var(--radius-full);
   cursor: pointer;
-  transition: all 0.15s ease;
+  transition: all 0.2s ease;
+  font-family: var(--font-body);
 }
 
 .thinking-toggle:hover {
+  background: var(--primary-light);
   border-color: var(--primary-color);
+  transform: translateY(-1px);
 }
 
 .thinking-toggle-header {
@@ -112,7 +115,7 @@ const toggleExpand = () => {
 .toggle-arrow {
   font-size: 10px;
   color: var(--text-muted);
-  transition: transform 0.2s ease;
+  transition: transform 0.25s ease;
 }
 
 .message-thinking.expanded .toggle-arrow {
@@ -120,14 +123,14 @@ const toggleExpand = () => {
 }
 
 .thinking-panel {
-  margin-top: 8px;
-  padding: 10px 12px;
-  background: var(--bg-tertiary);
-  border: 1px solid var(--border-light);
-  border-radius: var(--radius-sm);
+  margin-top: 10px;
+  padding: 12px 16px;
+  background: linear-gradient(135deg, var(--primary-pale), var(--bg-tertiary));
+  border: 1px solid var(--border-accent);
+  border-radius: var(--radius-md);
   font-size: 13px;
   color: var(--text-secondary);
-  line-height: 1.6;
+  line-height: 1.7;
 }
 
 .thinking-content {
@@ -136,13 +139,13 @@ const toggleExpand = () => {
 
 .thinking-slide-enter-active,
 .thinking-slide-leave-active {
-  transition: all 0.2s ease;
+  transition: all 0.25s ease;
   overflow: hidden;
 }
 
 .thinking-slide-enter-from,
 .thinking-slide-leave-to {
   opacity: 0;
-  transform: translateY(-6px);
+  transform: translateY(-8px);
 }
 </style>

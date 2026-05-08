@@ -33,18 +33,24 @@ const formattedTime = computed(() => {
 .message-header {
   display: flex;
   align-items: center;
-  gap: 8px;
-  margin-bottom: 6px;
+  gap: 10px;
+  margin-bottom: 8px;
 }
 
 .role-label {
   font-size: 12px;
   font-weight: 600;
   color: var(--text-secondary);
+  letter-spacing: 0.3px;
+}
+
+.role-label.ai-label {
+  color: var(--primary-color);
 }
 
 .message-time {
   font-size: 11px;
   color: var(--text-muted);
+  font-weight: 400;
 }
 </style>

@@ -82,31 +82,32 @@ defineExpose({ listRef, scrollToBottom });
 .ax-messages {
   flex: 1;
   overflow-y: auto;
-  padding: 20px 0;
+  padding: 24px 0;
   scroll-behavior: smooth;
 }
 
 .messages-wrapper {
-  max-width: 640px;
+  max-width: 680px;
   margin: 0 auto;
-  padding: 0 20px;
+  padding: 0 24px;
 }
 
 .message-item-wrapper {
-  margin-bottom: 12px;
+  margin-bottom: 16px;
+  animation: messageSlideIn 0.3s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .streaming-message {
-  max-width: 640px;
+  max-width: 680px;
   margin: 0 auto;
-  padding: 0 20px;
-  margin-bottom: 12px;
+  padding: 0 24px;
+  margin-bottom: 16px;
 }
 
-@keyframes messageIn {
+@keyframes messageSlideIn {
   from {
     opacity: 0;
-    transform: translateY(8px);
+    transform: translateY(16px);
   }
   to {
     opacity: 1;
@@ -115,16 +116,16 @@ defineExpose({ listRef, scrollToBottom });
 }
 
 .message-list-enter-active {
-  transition: all 0.2s ease;
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .message-list-leave-active {
-  transition: all 0.15s ease;
+  transition: all 0.2s ease;
 }
 
 .message-list-enter-from {
   opacity: 0;
-  transform: translateY(12px);
+  transform: translateY(16px);
 }
 
 .message-list-leave-to {

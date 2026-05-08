@@ -138,19 +138,42 @@ function renderActions(
 
 <style scoped>
 .ax-sender {
-  width: calc(100% - 32px);
-  max-width: 640px;
+  width: calc(100% - 48px);
+  max-width: 680px;
   margin: 0 auto;
   background: var(--bg-primary);
-  border-radius: var(--radius-md);
-  box-shadow: var(--shadow-md);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-lg);
   border: 1px solid var(--border-color);
   flex-shrink: 0;
-  margin-bottom: 8px;
+  margin-bottom: 10px;
+  transition: box-shadow 0.2s ease, border-color 0.2s ease;
+}
+
+.ax-sender:focus-within {
+  box-shadow: 0 4px 20px rgba(201, 123, 93, 0.15);
+  border-color: var(--primary-light);
+}
+
+.ax-sender :deep(.ant-btn-text) {
+  color: var(--text-secondary);
+}
+
+.ax-sender :deep(.ant-btn-text:hover) {
+  color: var(--primary-color);
+  background: var(--primary-pale);
 }
 
 .ax-attachments-inline {
-  padding: 20px;
+  padding: 24px;
   text-align: center;
+}
+
+.ax-attachments-inline :deep(.ant-typography) {
+  color: var(--text-secondary);
+}
+
+.ax-attachments-inline :deep(.ant-typography-secondary) {
+  color: var(--text-muted);
 }
 </style>

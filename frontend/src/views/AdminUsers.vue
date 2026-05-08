@@ -360,23 +360,53 @@ onMounted(loadUsers);
 <style scoped>
 .admin-page {
   max-width: 1400px;
-  margin: 20px auto;
-  padding: 0 20px;
+  margin: 24px auto;
+  padding: 0 24px;
 }
+
 .admin-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 16px;
+  margin-bottom: 20px;
 }
+
+.admin-header h2 {
+  font-family: var(--font-display);
+  font-size: 20px;
+  color: var(--text-primary);
+}
+
 .filter-bar {
   display: flex;
   gap: 12px;
-  margin-bottom: 16px;
+  margin-bottom: 20px;
 }
+
 .pagination-wrapper {
   display: flex;
   justify-content: flex-end;
-  margin-top: 16px;
+  margin-top: 20px;
+}
+
+.admin-page :deep(.el-table) {
+  border-radius: var(--radius-lg);
+}
+
+.admin-page :deep(.el-table th) {
+  background: var(--bg-tertiary) !important;
+  font-weight: 600;
+}
+
+.admin-page :deep(.el-button--small) {
+  padding: 5px 12px;
+}
+
+.admin-page :deep(.el-input) {
+  --el-input-border-radius: var(--radius-md);
+}
+
+.admin-page :deep(.el-select) {
+  --el-select-border-color-hover: var(--primary-color);
 }
 </style>

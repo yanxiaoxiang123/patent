@@ -50,19 +50,19 @@ defineExpose({});
 .preview-content {
   max-height: 500px;
   overflow-y: auto;
-  padding: 12px;
-  background: #f8fafc;
-  border-radius: 8px;
-  border: 1px solid #e2e8f0;
+  padding: 16px;
+  background: var(--bg-tertiary);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-color);
 }
 
 .preview-content pre {
   white-space: pre-wrap;
   word-wrap: break-word;
-  font-family: "Courier New", monospace;
+  font-family: 'JetBrains Mono', 'Fira Code', 'Courier New', monospace;
   font-size: 13px;
-  line-height: 1.6;
-  color: #334155;
+  line-height: 1.7;
+  color: var(--text-primary);
   margin: 0;
 }
 </style>

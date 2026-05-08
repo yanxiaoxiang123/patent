@@ -131,10 +131,11 @@ defineExpose({
 .message-actions {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  margin-top: 10px;
-  padding-top: 8px;
+  justify-content: flex-start;
+  margin-top: 12px;
+  padding-top: 10px;
   border-top: 1px solid var(--border-light);
+  gap: 4px;
 }
 
 .action-group {
@@ -146,25 +147,29 @@ defineExpose({
 .action-btn {
   display: flex;
   align-items: center;
-  gap: 4px;
-  padding: 4px 8px;
+  gap: 5px;
+  padding: 5px 10px;
   font-size: 12px;
   color: var(--text-muted);
-  border-radius: var(--radius-sm);
-  transition: all 0.15s ease;
+  border-radius: var(--radius-md);
+  transition: all 0.18s ease;
+  border: none;
+  background: transparent;
 }
 
 .action-btn:hover {
   color: var(--primary-color);
-  background: rgba(37, 99, 235, 0.04);
+  background: var(--primary-pale);
 }
 
 .action-text {
   font-size: 12px;
+  font-weight: 500;
 }
 
 .more-btn {
-  padding: 4px 6px;
+  padding: 5px 8px;
+  margin-left: 4px;
 }
 
 .copy-success-tip {
@@ -176,12 +181,13 @@ defineExpose({
   background: var(--text-primary);
   color: #fff;
   font-size: 13px;
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius-md);
   display: flex;
   align-items: center;
   gap: 6px;
   animation: fadeIn 0.2s ease;
   z-index: 10;
+  box-shadow: var(--shadow-lg);
 }
 
 .fade-enter-active,

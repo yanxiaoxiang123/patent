@@ -102,13 +102,13 @@ const handleCopy = async () => {
 <style scoped>
 .message-bubble {
   display: flex;
-  gap: 12px;
-  padding: 10px 16px;
+  gap: 14px;
+  padding: 12px 20px;
   max-width: 100%;
   width: 100%;
   margin: 0 auto;
-  animation: messageIn 0.2s ease;
   box-sizing: border-box;
+  position: relative;
 }
 
 .message-bubble.role-ai {
@@ -122,8 +122,9 @@ const handleCopy = async () => {
 
 .bubble-avatar {
   flex-shrink: 0;
-  width: 32px;
-  height: 32px;
+  width: 36px;
+  height: 36px;
+  position: relative;
 }
 
 .avatar {
@@ -134,48 +135,56 @@ const handleCopy = async () => {
   align-items: center;
   justify-content: center;
   font-size: 16px;
+  transition: transform 0.2s ease;
 }
 
 .ai-avatar {
-  background: var(--bg-tertiary);
-  color: var(--text-secondary);
+  background: var(--primary-pale);
+  color: var(--primary-color);
+  border: 1.5px solid var(--primary-light);
 }
 
 .user-avatar {
-  background: var(--primary-color);
+  background: linear-gradient(135deg, var(--primary-color), var(--accent));
   color: #fff;
+  box-shadow: 0 2px 8px rgba(201, 123, 93, 0.3);
+}
+
+.message-bubble:hover .avatar {
+  transform: scale(1.05);
 }
 
 .bubble-content {
   flex: 1;
   min-width: 0;
-  max-width: calc(100% - 44px);
+  max-width: calc(100% - 50px);
+  position: relative;
+}
+
+.message-bubble.role-user .bubble-content {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
 }
 
 @media (min-width: 768px) {
   .message-bubble {
-    padding: 12px 20px;
+    padding: 16px 24px;
+  }
+
+  .bubble-avatar {
+    width: 40px;
+    height: 40px;
   }
 
   .bubble-content {
-    max-width: calc(100% - 200px);
+    max-width: calc(100% - 220px);
   }
 }
 
 @media (min-width: 1024px) {
   .bubble-content {
-    max-width: 560px;
-  }
-}
-
-@keyframes messageIn {
-  from {
-    opacity: 0;
-    transform: translateY(6px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
+    max-width: 580px;
   }
 }
 </style>

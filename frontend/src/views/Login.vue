@@ -104,29 +104,31 @@ onMounted(() => {
   padding: 40px 16px;
   background: var(--bg-secondary);
   color-scheme: light;
-  font-family: -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+  font-family: var(--font-body);
 }
 
 .login-card {
-  width: 360px;
+  width: 380px;
   max-width: 100%;
-  padding: 32px;
-  border-radius: var(--radius-lg);
+  padding: 36px;
+  border-radius: var(--radius-xl);
   background: var(--bg-primary);
   border: 1px solid var(--border-color);
-  box-shadow: var(--shadow-md);
+  box-shadow: var(--shadow-lg);
+  animation: fadeSlideIn 0.4s ease;
 }
 
 .login-header {
   text-align: center;
-  margin-bottom: 28px;
+  margin-bottom: 32px;
 }
 
 .login-header h2 {
-  font-size: 20px;
+  font-size: 22px;
   font-weight: 600;
   color: var(--text-primary);
-  margin-bottom: 6px;
+  margin-bottom: 8px;
+  font-family: var(--font-display);
 }
 
 .login-header p {
@@ -135,35 +137,33 @@ onMounted(() => {
 }
 
 .login-form {
-  margin-top: 4px;
+  margin-top: 8px;
 }
 
 .login-card :deep(.el-form-item__label) {
   font-size: 13px;
   font-weight: 500;
   color: var(--text-primary);
-  padding-bottom: 6px;
+  padding-bottom: 8px;
 }
 
 .login-card :deep(.el-input__wrapper) {
-  padding: 2px 12px;
-  border-radius: var(--radius-sm);
+  padding: 2px 14px;
+  border-radius: var(--radius-md);
   box-shadow: none;
   border: 1px solid var(--border-color);
   background-color: var(--bg-secondary);
-  transition:
-    border-color 0.2s ease,
-    box-shadow 0.2s ease;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
 }
 
 .login-card :deep(.el-input__wrapper:hover) {
-  border-color: var(--text-muted);
+  border-color: var(--border-accent);
 }
 
 .login-card :deep(.el-input__wrapper.is-focus) {
   border-color: var(--primary-color);
   background-color: var(--bg-primary);
-  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+  box-shadow: 0 0 0 3px rgba(201, 123, 93, 0.12);
 }
 
 .login-card :deep(.el-input__inner) {
@@ -172,22 +172,35 @@ onMounted(() => {
 
 .login-button {
   width: 100%;
-  margin-top: 8px;
-  height: 40px;
-  border-radius: var(--radius-sm);
-  font-weight: 500;
+  margin-top: 12px;
+  height: 44px;
+  border-radius: var(--radius-md);
+  font-weight: 600;
   font-size: 14px;
   border: none;
-  background: var(--primary-color);
-  transition: background-color 0.2s ease;
+  background: linear-gradient(135deg, var(--primary-color), var(--accent));
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 8px rgba(201, 123, 93, 0.25);
 }
 
 .login-card :deep(.login-button.el-button--primary:hover) {
-  background: var(--primary-hover);
+  background: linear-gradient(135deg, var(--primary-hover), var(--accent));
+  box-shadow: 0 4px 12px rgba(201, 123, 93, 0.35);
 }
 
 .login-card :deep(.el-button.is-loading) {
   opacity: 0.9;
+}
+
+@keyframes fadeSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 @media (max-width: 640px) {
@@ -198,7 +211,7 @@ onMounted(() => {
   .login-card {
     width: 100%;
     padding: 28px 20px;
-    border-radius: var(--radius-md);
+    border-radius: var(--radius-lg);
   }
 }
 </style>

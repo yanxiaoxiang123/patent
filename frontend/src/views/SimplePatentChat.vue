@@ -262,7 +262,7 @@ onUnmounted(() => {
 .patent-chat {
   min-height: 100vh;
   background: var(--bg-secondary);
-  font-family: -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+  font-family: var(--font-body);
 }
 
 .chat-layout {
@@ -292,7 +292,9 @@ onUnmounted(() => {
   text-align: center;
   font-size: 11px;
   color: var(--text-muted);
-  padding: 6px 0;
+  padding: 8px 0;
+  font-family: var(--font-body);
+  letter-spacing: 0.3px;
 }
 
 /* 侧边栏背景遮罩 */
@@ -302,18 +304,18 @@ onUnmounted(() => {
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(15, 23, 42, 0.3);
-  backdrop-filter: blur(2px);
+  background: rgba(44, 36, 32, 0.2);
+  backdrop-filter: blur(3px);
   z-index: 1000;
 }
 
 /* 滑入滑出动画 */
 .slide-enter-active {
-  transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .slide-leave-active {
-  transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .slide-enter-from,
@@ -323,7 +325,7 @@ onUnmounted(() => {
 
 /* 淡入淡出动画 */
 .fade-enter-active {
-  transition: opacity 0.2s ease;
+  transition: opacity 0.25s ease;
 }
 
 .fade-leave-active {

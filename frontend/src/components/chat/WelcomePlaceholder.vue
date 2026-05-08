@@ -42,15 +42,54 @@ const emit = defineEmits<{
 
 <style scoped>
 .ax-placeholder {
-  max-width: 640px;
+  max-width: 720px;
   margin: 0 auto;
-  padding: 32px 20px 0;
+  padding: 48px 24px 0;
   width: 100%;
+  animation: fadeSlideIn 0.4s ease;
 }
 
 .ax-prompts {
-  max-width: 640px;
-  margin: 16px auto 0;
-  padding: 0 20px;
+  max-width: 720px;
+  margin: 24px auto 0;
+  padding: 0 24px;
+}
+
+.ax-prompts :deep(.ax-prompts-item) {
+  background: var(--bg-primary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  padding: 16px 20px;
+  transition: all 0.2s ease;
+  cursor: pointer;
+}
+
+.ax-prompts :deep(.ax-prompts-item:hover) {
+  border-color: var(--primary-light);
+  box-shadow: 0 4px 16px rgba(201, 123, 93, 0.12);
+  transform: translateY(-2px);
+}
+
+.ax-prompts :deep(.ax-prompts-item-title) {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.ax-prompts :deep(.ax-prompts-item-description) {
+  font-size: 13px;
+  color: var(--text-secondary);
+  margin-top: 4px;
+}
+
+@keyframes fadeSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 </style>
