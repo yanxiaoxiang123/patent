@@ -37,7 +37,7 @@ class ChatMessage(Base):
     role = Column(String(20), nullable=False)
     content = Column(Text, nullable=False)
     model = Column(String(50))
-    token_count = Column(Integer)
+    token_count = Column(Integer, default=0)
     document_id = Column(Integer, ForeignKey("documents.id", ondelete="SET NULL"))
     extra = Column("metadata", JSON)
     message_index = Column(Integer, nullable=False)

@@ -11,6 +11,8 @@ export interface User {
   last_login_at?: string;
   last_login_ip?: string;
   login_attempts?: number;
+  document_count?: number;
+  session_count?: number;
 }
 
 export interface UserListParams {
@@ -18,6 +20,7 @@ export interface UserListParams {
   size?: number;
   search?: string;
   role?: string;
+  activity_status?: string;
 }
 
 export interface UserListResponse {

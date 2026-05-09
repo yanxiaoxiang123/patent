@@ -64,7 +64,9 @@ class ChatPersistenceService:
         user_message: str,
         assistant_message: str,
         model: str,
-        document_id: Optional[int] = None
+        document_id: Optional[int] = None,
+        user_token_count: int = 0,
+        assistant_token_count: int = 0,
     ) -> None:
         """保存用户和助手消息"""
         base_index = await self.get_next_message_index(session, session_id)
