@@ -15,7 +15,7 @@ export const useAuthStore = defineStore("auth", () => {
   // 登录
   const login = async (form: LoginForm) => {
     const response = await loginApi(form);
-    const { access_token, user: userData } = response.data ?? response;
+    const { access_token, user: userData } = response;
 
     token.value = access_token;
     user.value = userData;
@@ -31,6 +31,9 @@ export const useAuthStore = defineStore("auth", () => {
   const logout = async () => {
     try {
       await logoutApi();
+    } catch {
+      // 即使服务端登出失败（网络问题等），仍清理本地状态
+      // 服务端 Token 会在过期后自动失效
     } finally {
       token.value = null;
       user.value = null;

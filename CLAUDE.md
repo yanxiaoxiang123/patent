@@ -1,8 +1,3 @@
----
-description: 
-alwaysApply: true
----
-
 # CLAUDE.md
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
@@ -79,11 +74,13 @@ backend/app/
 ├── services/
 │   ├── document_parser.py   # .docx (python-docx), .pdf (pdfplumber) parsing
 │   ├── ollama.py            # Ollama API client with streaming support
-│   ├── ai_adapter.py        # Ollama/Coze adapter pattern
 │   ├── chat_persistence.py  # Chat session/message persistence
-│   └── rule_retriever.py    # Rule retrieval for patent audit
+│   ├── rule_retriever.py    # Rule retrieval for patent audit
+│   └── user_repository.py   # User data access
 ├── prompts/
-│   └── rules/               # Patent audit rule JSON templates
+│   └── rules/
+│       ├── loader.py        # Rule JSON loader
+│       └── rules/            # Patent audit rule JSON templates
 │       ├── general_case_rules.json      (template_id=1)
 │       ├── patent_guidance_rules.json   (template_id=2)
 │       ├── project_case_rules.json      (template_id=3)
@@ -102,7 +99,8 @@ frontend/src/
 │   ├── message-bubble/  # Message bubble components with thinking process support
 │   └── common/          # Shared components (ErrorBoundary, FilePreviewDialog, etc.)
 ├── services/            # API clients (api.ts, auth.ts, documents.ts, admin.ts)
-├── stores/              # Pinia stores (auth.ts, documents.ts, chat.ts)
+├── stores/              # Pinia stores (auth.ts, documents.ts)
+├── composables/        # Vue composables (useChatSession, useThinking, useSSEStream, etc.)
 ├── composables/         # Vue composables (useChatSession, useThinking, etc.)
 ├── router/
 │   └── simple.ts        # Vue Router configuration

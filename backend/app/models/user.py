@@ -20,6 +20,7 @@ class User(Base):
     last_login_ip = Column(String(45), nullable=True, comment="最后登录IP")
     login_attempts = Column(Integer, default=0, nullable=False, comment="登录失败次数")
     locked_until = Column(DateTime, nullable=True, comment="账户锁定截止时间")
+    token_version = Column(Integer, default=0, nullable=False, comment="Token版本号，递增可批量失效旧Token")
     created_at = Column(
         TIMESTAMP,
         server_default=func.now(),
@@ -49,6 +50,7 @@ class User(Base):
             "last_login_at": self.last_login_at.isoformat() if self.last_login_at else None,
             "last_login_ip": self.last_login_ip,
             "login_attempts": self.login_attempts,
+            "token_version": self.token_version,
             "created_at": self.created_at.isoformat() if self.created_at else None,
             "updated_at": self.updated_at.isoformat() if self.updated_at else None,
         }

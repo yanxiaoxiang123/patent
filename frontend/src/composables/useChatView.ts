@@ -319,21 +319,54 @@ export function useChatView(options: UseChatViewOptions) {
       nextTick(() => scrollToBottom());
       await refreshSessions();
     } catch (error: any) {
-      console.error("生成 AI 响应失败:", error);
       if (error?.name === "AbortError") {
-        if ((currentAnswer.value || "").trim().length > 0)
+        // 用户主动中断 — 保留已生成的部分内容
+        const partialContent = (currentAnswer.value || "").trim();
+        const partialThinking = currentThinking.value || "";
+
+        if (partialContent.length > 0) {
           messages.value = [
             ...messages.value,
             {
               id: Date.now().toString(),
               role: "assistant",
-              content: currentAnswer.value,
-              thinking: currentThinking.value,
+              content: partialContent + "\n\n---\n*（生成已中断）*",
+              thinking: partialThinking,
               timestamp: new Date(),
               thinkingExpanded: streamingThinkingExpanded.value,
             },
           ];
+
+          // 将部分结果持久化到后端（后端中断时不会自动保存）
+          try {
+            const token = localStorage.getItem("token");
+            const headers: Record<string, string> = {
+              "Content-Type": "application/json",
+            };
+            if (token) headers.Authorization = `Bearer ${token}`;
+
+            await fetch("/api/ai/persist-partial", {
+              method: "POST",
+              headers,
+              body: JSON.stringify({
+                user_message: message,
+                assistant_message: partialContent,
+                model: model.value || "qwen3:8b",
+                session_id: currentBackendSessionId.value,
+                document_id:
+                  attachments && attachments.length > 0
+                    ? attachments[0]?.id
+                    : null,
+              }),
+            });
+          } catch {
+            // 持久化失败不影响用户体验，部分内容仍保留在前端
+          }
+
+          await refreshSessions();
+        }
       } else {
+        console.error("生成 AI 响应失败:", error);
         const errorMessage = normalizeAiErrorMessage(error?.message);
         ElMessage.error(errorMessage);
         messages.value = [

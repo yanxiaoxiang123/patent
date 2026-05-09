@@ -1,5 +1,7 @@
 """聊天 API 模块"""
+import asyncio
 import json
+import logging
 import httpx
 from typing import Optional
 from fastapi import APIRouter, Request, HTTPException, status
@@ -126,8 +128,14 @@ async def create_stream_generator(
     user_id: Optional[int],
     strict_system_prompt: Optional[str] = None
 ):
-    """创建流式响应生成器"""
+    """创建流式响应生成器
+
+    中断保留机制：当客户端断开连接（用户点停止）时，
+    已累积的 assistant_text 会被持久化到数据库，
+    而不是像之前一样直接丢弃。
+    """
     assistant_text = ""
+    disconnected = False
     try:
         # messages 是从前端传来的字典列表，需要转换为 ChatMessage 对象
         if strict_system_prompt:
@@ -186,17 +194,59 @@ async def create_stream_generator(
         # 发送完成信号
         yield {"event": "done", "data": "[DONE]", "id": "", "retry": None}
 
-    except Exception as e:
-        err_msg = str(e)
-        if "模型配置或请求参数错误" in err_msg:
-            user_msg = "抱歉，模型配置或请求参数错误，请联系管理员检查模型配置。"
-        elif "无法连接到 Ollama 服务" in err_msg:
-            user_msg = "抱歉，无法连接 AI 服务，请稍后重试。"
+    except (asyncio.CancelledError, Exception) as e:
+        # 区分客户端断开和真正的服务端错误
+        is_disconnect = (
+            isinstance(e, asyncio.CancelledError)
+            or "disconnect" in str(e).lower()
+            or "connection" in str(e).lower()
+        )
+
+        if is_disconnect:
+            disconnected = True
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.info("客户端断开连接，已累积 %d 字符", len(assistant_text))
         else:
-            user_msg = "抱歉，AI 服务暂时不可用，请稍后重试。"
-        error_data = {"choices": [{"delta": {"content": user_msg}}]}
-        yield {"event": "error", "data": json.dumps(error_data, ensure_ascii=False), "id": "", "retry": None}
-        yield {"event": "done", "data": "[DONE]", "id": "", "retry": None}
+            err_msg = str(e)
+            if "模型配置或请求参数错误" in err_msg:
+                user_msg_text = "抱歉，模型配置或请求参数错误，请联系管理员检查模型配置。"
+            elif "无法连接到 Ollama 服务" in err_msg:
+                user_msg_text = "抱歉，无法连接 AI 服务，请稍后重试。"
+            else:
+                user_msg_text = "抱歉，AI 服务暂时不可用，请稍后重试。"
+            error_data = {"choices": [{"delta": {"content": user_msg_text}}]}
+            yield {"event": "error", "data": json.dumps(error_data, ensure_ascii=False), "id": "", "retry": None}
+            yield {"event": "done", "data": "[DONE]", "id": "", "retry": None}
+    finally:
+        # 无论是正常完成还是中断，如果有部分内容且尚未持久化，保存它
+        if disconnected and assistant_text.strip():
+            try:
+                if strict_system_prompt:
+                    user_message = messages[0].get("content", "") if messages and isinstance(messages[0], dict) else ""
+                else:
+                    user_msg_dict = next((m for m in messages if isinstance(m, dict) and m.get("role") == "user"), {})
+                    user_message = user_msg_dict.get("content", "") if isinstance(user_msg_dict, dict) else ""
+
+                chat_messages = []
+                for m in messages:
+                    if isinstance(m, dict):
+                        chat_messages.append(ChatMessage(role=m.get("role", "user"), content=m.get("content", "")))
+
+                await persist_chat(
+                    ServiceChatRequest(
+                        messages=chat_messages,
+                        model=model,
+                        session_id=chat_request.session_id,
+                        document_id=chat_request.document_id,
+                    ),
+                    user_message,
+                    assistant_text,
+                    user_id
+                )
+            except Exception:
+                import logging
+                logging.getLogger(__name__).warning("中断后持久化部分结果失败", exc_info=True)
 
 
 async def create_patent_error_stream():
@@ -353,6 +403,51 @@ async def chat_completion(chat_request: ChatRequest, request: Request):
         )
 
     return await handle_regular_chat(chat_request, user_id)
+
+
+# ===================== 部分结果持久化 =====================
+
+class PersistPartialRequest(BaseModel):
+    """用户中断后持久化部分生成结果"""
+    user_message: str = Field(..., min_length=1, description="用户消息")
+    assistant_message: str = Field(..., min_length=1, description="AI 部分响应")
+    model: str = Field(default=OLLAMA_MODEL, description="模型名称")
+    session_id: Optional[int] = Field(default=None, ge=1, description="会话ID")
+    document_id: Optional[int] = Field(default=None, ge=1, description="文档ID")
+
+
+@router.post("/persist-partial")
+async def persist_partial_response(req: PersistPartialRequest, request: Request):
+    """持久化用户中断后的部分 AI 响应
+
+    当用户在流式生成过程中点击停止，前端调用此接口
+    将已累积的部分结果保存到数据库。
+    """
+    user_id = get_user_id_from_request(request)
+    if not user_id:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="未登录")
+
+    logger = logging.getLogger(__name__)
+    try:
+        service_messages = [
+            ChatMessage(role="user", content=req.user_message),
+        ]
+        await persist_chat(
+            ServiceChatRequest(
+                messages=service_messages,
+                model=req.model,
+                session_id=req.session_id,
+                document_id=req.document_id,
+            ),
+            req.user_message,
+            req.assistant_message,
+            user_id,
+        )
+        logger.info("部分结果已持久化: user_id=%d, chars=%d", user_id, len(req.assistant_message))
+        return {"message": "部分结果已保存"}
+    except Exception:
+        logger.warning("部分结果持久化失败", exc_info=True)
+        raise HTTPException(status_code=500, detail="保存失败")
 
 
 # ===================== 会话管理 =====================

@@ -1,13 +1,28 @@
-"""认证 API 模块"""
+"""认证 API 模块
+
+安全增强：
+- 登录返回携带 JTI 和 token_version 的短有效期 Token
+- 登出时将 Token JTI 加入 Redis 黑名单，服务端真正失效
+- get_current_user 在每次请求时校验黑名单 + token_version
+- 管理员可强制下线用户（递增 token_version）
+"""
 import logging
 from datetime import datetime, timedelta, timezone
 from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException, status, Request
 from pydantic import BaseModel, Field
 
-from app.core.security import create_token, parse_auth_header, TokenPayload
+from app.core.security import (
+    create_token,
+    parse_auth_header,
+    extract_raw_token,
+    verify_token,
+    TokenPayload,
+    TOKEN_EXPIRE_HOURS,
+)
 from app.core.exceptions import AuthenticationException, AuthorizationException
 from app.services.user_repository import UserRepository, get_user_dict_by_username
+from app.services.token_blacklist import add_to_blacklist, is_blacklisted
 from app.utils.database import AsyncSessionLocal
 from app.utils.passwords import hash_password, verify_password, needs_rehash
 from app.models import User as UserModel
@@ -52,10 +67,24 @@ class CreateUserRequest(BaseModel):
 # ===================== 认证依赖 =====================
 
 async def get_current_user(request: Request) -> dict:
-    """获取当前用户"""
-    token_payload: Optional[TokenPayload] = parse_auth_header(request.headers.get("Authorization"))
+    """获取当前用户
+
+    安全校验流程：
+    1. 解析并验证 JWT 签名和过期时间
+    2. 检查 Token JTI 是否在黑名单中（已登出/已撤销）
+    3. 从数据库加载用户，验证用户是否存在且启用
+    4. 比对 token_version 确保 Token 未被批量失效
+    5. 比对 username 确保用户信息未变更
+    """
+    token_payload: Optional[TokenPayload] = parse_auth_header(
+        request.headers.get("Authorization")
+    )
     if not token_payload:
         raise AuthenticationException("未认证或Token已过期")
+
+    # 检查 Token 是否已被撤销（黑名单）
+    if await is_blacklisted(token_payload.jti):
+        raise AuthenticationException("Token已失效，请重新登录")
 
     async with AsyncSessionLocal() as session:
         user = await UserRepository.get_by_id(session, token_payload.user_id)
@@ -63,35 +92,42 @@ async def get_current_user(request: Request) -> dict:
     if not user:
         raise AuthenticationException("用户不存在")
 
+    # 检查 token_version 是否匹配（密码变更或管理员强制下线后失效）
+    current_token_version = getattr(user, "token_version", 0) or 0
+    if token_payload.token_version != current_token_version:
+        raise AuthenticationException("Token已失效（凭证已变更），请重新登录")
+
     if token_payload.username != user.username:
         raise AuthenticationException("用户信息已变更，请重新登录")
 
-    user_dict = {
-        "id": user.id,
-        "username": user.username,
-        "role": user.role,
-    }
-    if not user_dict:
-        raise AuthenticationException("用户不存在")
-
     return {
-        "id": str(user_dict["id"]),
-        "username": user_dict["username"],
-        "role": user_dict["role"] or "user"
+        "id": str(user.id),
+        "username": user.username,
+        "role": user.role or "user",
     }
 
 
 async def get_current_user_model(request: Request) -> UserModel:
     """获取当前用户（ORM 模型）"""
-    token_payload: Optional[TokenPayload] = parse_auth_header(request.headers.get("Authorization"))
+    token_payload: Optional[TokenPayload] = parse_auth_header(
+        request.headers.get("Authorization")
+    )
     if not token_payload:
         raise AuthenticationException("未认证或Token已过期")
+
+    # 检查 Token 是否已被撤销
+    if await is_blacklisted(token_payload.jti):
+        raise AuthenticationException("Token已失效，请重新登录")
 
     async with AsyncSessionLocal() as session:
         user = await UserRepository.get_by_id(session, token_payload.user_id)
 
     if not user:
         raise AuthenticationException("用户不存在")
+
+    current_token_version = getattr(user, "token_version", 0) or 0
+    if token_payload.token_version != current_token_version:
+        raise AuthenticationException("Token已失效（凭证已变更），请重新登录")
 
     if token_payload.username != user.username:
         raise AuthenticationException("用户信息已变更，请重新登录")
@@ -112,12 +148,12 @@ async def require_admin(request: Request) -> dict:
 @router.post("/login")
 async def login(user_data: UserLogin, request: Request):
     """用户登录"""
-    logger.info(f"尝试登录用户: {user_data.username}")
+    logger.info("尝试登录用户: %s", user_data.username)
 
     user_dict = await get_user_dict_by_username(user_data.username)
 
     if not user_dict:
-        logger.warning(f"用户不存在: {user_data.username}")
+        logger.warning("用户不存在: %s", user_data.username)
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="用户名不存在"
@@ -130,10 +166,11 @@ async def login(user_data: UserLogin, request: Request):
     is_active = user_dict.get("is_active", True)
     locked_until = user_dict.get("locked_until")
     login_attempts = user_dict.get("login_attempts", 0)
+    token_version = user_dict.get("token_version", 0) or 0
 
     # 检查账户是否被禁用
     if not is_active:
-        logger.warning(f"账户已被禁用: {user_data.username}")
+        logger.warning("账户已被禁用: %s", user_data.username)
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="账户已被禁用，请联系管理员"
@@ -142,9 +179,13 @@ async def login(user_data: UserLogin, request: Request):
     # 检查账户是否被锁定
     now = datetime.now()  # naive datetime for MySQL compatibility
     if locked_until:
-        locked_until_naive = locked_until.replace(tzinfo=None) if locked_until.tzinfo is not None else locked_until
+        locked_until_naive = (
+            locked_until.replace(tzinfo=None)
+            if locked_until.tzinfo is not None
+            else locked_until
+        )
         if now < locked_until_naive:
-            logger.warning(f"账户已被锁定: {user_data.username}")
+            logger.warning("账户已被锁定: %s", user_data.username)
             raise HTTPException(
                 status_code=status.HTTP_429_TOO_MANY_REQUESTS,
                 detail="请稍后再试"
@@ -157,11 +198,17 @@ async def login(user_data: UserLogin, request: Request):
             if user:
                 user.login_attempts = user.login_attempts + 1
                 if user.login_attempts >= LOGIN_MAX_ATTEMPTS:
-                    user.locked_until = datetime.now() + timedelta(minutes=LOCKOUT_DURATION_MINUTES)
-                    logger.warning(f"账户已被锁定（连续失败{LOGIN_MAX_ATTEMPTS}次）: {user_data.username}")
+                    user.locked_until = datetime.now() + timedelta(
+                        minutes=LOCKOUT_DURATION_MINUTES
+                    )
+                    logger.warning(
+                        "账户已被锁定（连续失败%d次）: %s",
+                        LOGIN_MAX_ATTEMPTS,
+                        user_data.username,
+                    )
                 await session.commit()
 
-        logger.warning(f"密码错误: {user_data.username}")
+        logger.warning("密码错误: %s", user_data.username)
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="密码错误"
@@ -185,15 +232,18 @@ async def login(user_data: UserLogin, request: Request):
                     user.password_hash = hash_password(user_data.password)
                     await session.commit()
         except Exception as e:
-            logger.warning(f"密码迁移失败: {user_data.username}, error={e}")
+            logger.warning("密码迁移失败: %s, error=%s", user_data.username, e)
 
-    logger.info(f"登录成功: {user_data.username}")
+    logger.info("登录成功: %s", user_data.username)
 
-    access_token = create_token(user_id, username, role or "user")
+    access_token = create_token(
+        user_id, username, role or "user", token_version=token_version
+    )
 
     return ApiResponse.ok({
         "access_token": access_token,
         "token_type": "bearer",
+        "expires_in": TOKEN_EXPIRE_HOURS * 3600,
         "user": {
             "id": user_id,
             "username": username,
@@ -204,16 +254,38 @@ async def login(user_data: UserLogin, request: Request):
     }).model_dump()
 
 
+@router.post("/logout")
+async def logout(request: Request):
+    """用户登出 — 服务端撤销 Token
+
+    将当前 Token 的 JTI 加入 Redis 黑名单，
+    后续使用该 Token 的请求将被拒绝。
+    """
+    raw_token = extract_raw_token(request.headers.get("Authorization"))
+    if not raw_token:
+        # 未携带 Token 也返回成功（幂等性）
+        return ApiResponse.ok(message="登出成功").model_dump()
+
+    token_payload = verify_token(raw_token)
+    if token_payload:
+        # 计算 Token 剩余存活时间，作为黑名单 TTL
+        now = datetime.now(timezone.utc)
+        remaining_seconds = int((token_payload.exp - now).total_seconds())
+        if remaining_seconds > 0:
+            await add_to_blacklist(token_payload.jti, remaining_seconds)
+            logger.info(
+                "用户登出，Token 已撤销: user=%s, jti=%s",
+                token_payload.username,
+                token_payload.jti,
+            )
+
+    return ApiResponse.ok(message="登出成功").model_dump()
+
+
 @router.get("/me")
 async def get_current_user_info():
     """获取当前用户信息"""
     return {"message": "认证API工作正常"}
-
-
-@router.post("/logout")
-async def logout():
-    """用户登出（JWT Token 无需服务端存储，客户端删除Token即可）"""
-    return {"message": "登出成功"}
 
 
 # ===================== 管理员路由 =====================
@@ -267,3 +339,29 @@ async def delete_user(user_id: int, current_admin: dict = Depends(require_admin)
         if not success:
             raise HTTPException(status_code=404, detail="用户不存在")
         return ApiResponse.ok(message="删除成功").model_dump()
+
+
+@router.post("/users/{user_id}/force-logout")
+async def force_logout_user(user_id: int, current_admin: dict = Depends(require_admin)):
+    """管理员强制下线用户
+
+    递增用户的 token_version，使其所有已签发 Token 立即失效。
+    """
+    async with AsyncSessionLocal() as session:
+        user = await UserRepository.get_by_id(session, user_id)
+        if not user:
+            raise HTTPException(status_code=404, detail="用户不存在")
+
+        current_version = getattr(user, "token_version", 0) or 0
+        user.token_version = current_version + 1
+        await session.commit()
+
+        logger.info(
+            "管理员强制下线用户: user_id=%d, new_token_version=%d",
+            user_id,
+            user.token_version,
+        )
+
+    return ApiResponse.ok(
+        message=f"已强制下线用户 {user.username}，所有活跃Token已失效"
+    ).model_dump()

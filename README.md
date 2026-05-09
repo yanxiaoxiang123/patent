@@ -12,9 +12,9 @@ AI-powered patent document review platform that helps patent agents improve revi
 - **Document Parsing** -- Upload and parse `.docx` and `.pdf` patent documents with intelligent text segmentation
 - **AI Formal Review** -- Automated typo detection, format validation, and compliance checks powered by Ollama (Qwen3)
 - **Rule-Based Review Agents** -- Four specialized review templates: general case, patent guidance, project case, and IPC classification
-- **Real-Time Streaming** -- SSE-based streaming responses with thinking process visualization
+- **Real-Time Streaming** -- SSE-based streaming responses with thinking process visualization, auto-reconnect, and mid-generation stop with partial result preservation
 - **Interactive Chat** -- Multi-session chat interface with message persistence, document context, and markdown rendering
-- **User Management** -- Token-based authentication with admin panel for user administration
+- **User Management** -- JWT authentication with server-side token revocation, token versioning, and admin panel for user administration
 - **Rate Limiting** -- Redis-backed request throttling with configurable limits
 
 ## Tech Stack
@@ -134,9 +134,8 @@ Copy `backend/.env.example` to `backend/.env` and configure:
 
 | Variable | Description | Required |
 |----------|-------------|----------|
-| `TOKEN_SECRET` | Secret key for JWT token signing | Yes |
+| `TOKEN_SECRET` | Secret key for JWT signing (min 32 chars) | Yes |
 | `DB_HOST` / `DB_PORT` / `DB_USER` / `DB_PASSWORD` / `DB_NAME` | Database connection | Yes |
-| `OLLAMA_URL` | Ollama server URL | No (default: `http://localhost:11434`) |
 | `OLLAMA_URL` | Ollama server URL | No (default: `http://localhost:11434`) |
 | `OLLAMA_URLS` | Ollama server URLs (comma-separated) | No |
 | `OLLAMA_MODEL` | Model name | No (default: `qwen3:8b`) |
@@ -151,15 +150,17 @@ Copy `backend/.env.example` to `backend/.env` and configure:
 | Endpoint | Description |
 |----------|-------------|
 | `POST /api/auth/login` | User login |
-| `POST /api/auth/logout` | User logout |
+| `POST /api/auth/logout` | User logout (server-side token revocation) |
 | `GET /api/auth/me` | Current user info |
 | `POST /api/documents/upload` | Upload patent document |
 | `GET /api/documents` | List user documents |
 | `GET /api/documents/{id}` | Get document details |
 | `POST /api/ai/chat` | Send chat message (SSE streaming) |
+| `POST /api/ai/persist-partial` | Save partial AI response after user stop |
 | `GET /api/ai/sessions` | List chat sessions |
 | `GET /api/admin/users` | Admin: list users |
 | `POST /api/admin/users` | Admin: create user |
+| `POST /api/auth/users/{id}/force-logout` | Admin: force-logout user |
 
 ## Review Agents
 
@@ -194,7 +195,9 @@ Nginx /api → Uvicorn :8000 (backend)
 
 ### Frontend
 
-- **SSE Batch Rendering**: 50ms throttle on `useSSEStream`, reducing Vue reactivity triggers from ~1000/response to ~20/s
+- **SSE rAF Rendering**: `requestAnimationFrame` batch updates replace fixed 50ms `setTimeout`, syncing with browser paint frames for smoother streaming output
+- **SSE Auto-Reconnect**: Exponential backoff retry (up to 3 attempts) on network interruption, accumulated content preserved across reconnects
+- **Abort Preservation**: User-initiated stop flushes batcher buffers and persists partial AI response to both frontend state and backend database
 - **Code Splitting**: `SimplePatentChat.vue` reduced 1204→1042 lines via extraction of `useSSEStream`, `useTemplateSelector`, and `ContentPreviewDialog`
 - **Conversation History**: N+1 query eliminated -- backend JOINs document info in batch, frontend no longer makes extra API call per session
 - **No Message Limit**: Removed the `.slice(-12)` constraint, full conversation history sent to AI
@@ -207,6 +210,15 @@ Nginx /api → Uvicorn :8000 (backend)
 - **Error Visibility**: `logger.exception()` replaces flat `logger.error()` for chat persistence failures, including full stack traces
 - **Multi-URL Ollama**: Configurable `OLLAMA_URLS` for failover; removed localhost fallback to avoid wasted retries
 
+## Security Hardening
+
+- **JWT Token Revocation**: Server-side logout via Redis JTI blacklist -- tokens are truly invalidated on logout, not just cleared client-side
+- **Short-Lived Tokens**: Token expiry reduced from 24h to 2h, minimizing window of exposure if a token is leaked
+- **Token Versioning**: `token_version` column on users table; admin can force-logout any user by incrementing their version, instantly invalidating all active tokens
+- **Secret Strength Enforcement**: `TOKEN_SECRET` must be ≥32 characters at startup; app refuses to start with weak secrets
+- **Seed Password Security**: `init_tables.py` generates random 16-char passwords with bcrypt hashing instead of hardcoded SHA256 hashes of known passwords
+- **Upload Header Fix**: Removed manual `Content-Type: multipart/form-data` override that stripped the `boundary` parameter, causing failures with strict WAFs
+
 ## Recent Fixes
 
 - **Login Redirect**: `window.location.href` → `router.push('/chat')` for proper SPA routing
@@ -216,12 +228,9 @@ Nginx /api → Uvicorn :8000 (backend)
 - **JSON Parse Safety**: Dedicated try-catch for localStorage parsing with auto-cleanup on corruption
 - **File Upload**: Variable naming `isLt20M` → `isLt20MB`; `hasattr` → `getattr` for file.size
 
-## Test Accounts
+## Initial Setup
 
-| Username | Password | Role |
-|----------|----------|------|
-| `yan` | `123456` | user |
-| `admin` | `admin123` | admin |
+Run `python init_tables.py` to create tables and seed users. **Passwords are randomly generated** and printed to the console once -- record them immediately. Change passwords after first login.
 
 ## Contributing
 

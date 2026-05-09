@@ -25,16 +25,13 @@ export const getDocument = async (id: number): Promise<DocumentItem> => {
 export const uploadDocument = async (
   formData: FormData,
 ): Promise<DocumentItem> => {
-  const token = localStorage.getItem("token");
-  const authHeader = token
-    ? token.startsWith("Bearer ")
-      ? token
-      : `Bearer ${token}`
-    : undefined;
+  // 不要手动设置 Content-Type — axios 检测到 FormData 时会自动设置
+  // multipart/form-data 并附带正确的 boundary 分隔符。
+  // 手动写死会丢失 boundary，导致后端/WAF 解析失败。
+  // Authorization 已由 api.ts 请求拦截器统一注入。
   const response = (await api.post("/documents/upload", formData, {
     headers: {
-      "Content-Type": "multipart/form-data",
-      ...(authHeader ? { Authorization: authHeader } : {}),
+      "Content-Type": undefined,
     },
   })) as unknown as DocumentItem;
   return response;

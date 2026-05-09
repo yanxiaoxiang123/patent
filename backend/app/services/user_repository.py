@@ -92,6 +92,7 @@ async def get_user_by_username(username: str) -> Optional[Dict[str, Any]]:
                 "is_active": user.is_active,
                 "locked_until": user.locked_until,
                 "login_attempts": user.login_attempts,
+                "token_version": getattr(user, "token_version", 0) or 0,
             }
         return None
 
